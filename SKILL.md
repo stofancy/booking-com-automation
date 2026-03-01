@@ -1,6 +1,6 @@
 ---
 name: booking-com-automation
-description: Automate flight and hotel searches on booking.com. Use when: (1) searching for flights between cities, (2) searching for hotels in a destination, (3) comparing prices across dates, (4) finding travel options within budget. NOT for: completing bookings (manual confirmation required), managing existing reservations, or non-booking.com travel sites.
+description: Automate hotel searches on booking.com. Use when: (1) searching for hotels in a destination, (2) comparing prices across dates, (3) finding accommodations within budget, (4) filtering by amenities and ratings. NOT for: completing bookings (manual confirmation required), managing existing reservations, flight search (coming soon), or non-booking.com travel sites.
 metadata:
   {
     "openclaw":
@@ -28,17 +28,18 @@ Automate flight and hotel searches on booking.com using browser automation.
 
 ✅ **USE this skill when:**
 
-- Searching for flights between two cities
-- Searching for hotels in a destination
-- Comparing prices across different dates
-- Finding travel options within a budget
-- Getting quick summaries of top 3-5 options
+- 🏨 Searching for hotels in a destination
+- 💰 Comparing hotel prices across different dates
+- 🎯 Finding accommodations within a budget
+- ⭐ Filtering hotels by amenities, ratings, or location
+- 📊 Getting quick summaries of top 3-5 hotel options
 
 ❌ **DON'T use this skill when:**
 
 - Completing actual bookings (requires manual confirmation)
 - Managing or modifying existing reservations
 - Searching on other travel sites (Expedia, Kayak, etc.)
+- ✈️ Flight search (not yet implemented - coming soon)
 - Booking car rentals or airport taxis (not yet supported)
 
 ## Setup
@@ -62,20 +63,6 @@ Ensure you're logged into booking.com in your Chrome browser before using this s
 
 ## Usage
 
-### Flight Search
-
-```
-Find flights from New York to London, March 15-22, 2 passengers
-```
-
-```
-Search flights JFK to PAR, departing April 1, returning April 8, economy class
-```
-
-```
-Cheapest flights from San Francisco to Tokyo in May, flexible dates +/- 3 days
-```
-
 ### Hotel Search
 
 ```
@@ -90,46 +77,33 @@ Search 4-star hotels in Barcelona near city center, April 10-15
 Best rated hotels in Tokyo with free WiFi and breakfast, May 1-7
 ```
 
-### Flexible Date Search
+```
+Hotels in New York with gym and pool, under $300/night, Manhattan area
+```
 
 ```
-Flights from LA to Miami, flexible dates in June, show cheapest options
+Cheap hotels in London, any rating, March 10-15, 1 guest
 ```
+
+### Flexible Date Search
 
 ```
 Hotels in Rome, weekend in March, compare prices across weekends
 ```
 
+```
+Best hotel deals in Bangkok, flexible dates in April, show cheapest
+```
+
+### Coming Soon ✈️
+
+Flight search is planned but not yet implemented. Hotel booking is the current focus.
+
 ## Output Format
 
-The skill returns text summaries with 3-5 options:
+The skill returns text summaries with 3-5 hotel options:
 
-### Flight Example
-
-```
-✈️ Found 5 flights from JFK to LHR (March 15-22, 2026):
-
-1. British Airways BA112 - $687
-   Depart: 10:30 PM → Arrive: 10:25 AM+1 (7h 55m, nonstop)
-   Return: BA113 - 6:00 PM → 8:50 PM (8h 50m, nonstop)
-   [Book on booking.com](https://booking.com/...)
-
-2. Virgin Atlantic VS4 - $712
-   Depart: 8:00 PM → Arrive: 8:00 AM+1 (7h 00m, nonstop)
-   Return: VS3 - 11:30 AM → 2:30 PM (8h 00m, nonstop)
-   [Book on booking.com](https://booking.com/...)
-
-3. American Airlines AA100 - $745
-   Depart: 6:30 PM → Arrive: 6:45 AM+1 (8h 15m, nonstop)
-   Return: AA101 - 4:15 PM → 7:20 PM (9h 05m, nonstop)
-   [Book on booking.com](https://booking.com/...)
-
-... (2 more options)
-
-💡 Best value: Option 1 (British Airways) - lowest price with good timing
-```
-
-### Hotel Example
+### Example Output
 
 ```
 🏨 Found 5 hotels in Paris (March 15-20, 2026, 2 guests):
@@ -169,18 +143,12 @@ Results can be sorted by:
 
 Supported filters:
 
-**Flights:**
-- Cabin class (economy, premium, business, first)
-- Number of stops (nonstop, 1 stop, any)
-- Airlines (specific carriers)
-- Departure/arrival time windows
-
-**Hotels:**
-- Star rating (1-5 stars)
-- Guest rating (minimum score)
-- Price range (min-max per night)
-- Amenities (WiFi, pool, gym, parking, etc.)
-- Distance from city center
+- ⭐ Star rating (1-5 stars)
+- 📊 Guest rating (minimum score, e.g., 8.0+)
+- 💰 Price range (min-max per night)
+- 🏊 Amenities (WiFi, pool, gym, parking, breakfast, etc.)
+- 📍 Distance from city center or specific landmark
+- 🏨 Hotel type (apartment, resort, hostel, etc.)
 
 ### Error Handling
 
@@ -197,24 +165,27 @@ Common errors and solutions:
 
 🚧 **Under Active Development**
 
-Current sprint: Foundation & Infrastructure (Epic 1)
+**Current Focus**: 🏨 Hotel Search  
+**Current Sprint**: Foundation & Infrastructure (Epic 1)  
+**Next Sprint**: Hotel Search (Epic 2)
 
 See [GitHub Projects](https://github.com/stofancy/booking-com-automation/projects) for roadmap.
 
-### Implemented Features
+### Roadmap
 
-- [ ] Flight search
-- [ ] Hotel search
-- [ ] Date flexibility
-- [ ] Price comparison
-- [ ] Filter support
+- [x] Sprint 1: Foundation & Infrastructure (In Progress)
+- [ ] Sprint 2: Hotel Search (Next)
+- [ ] Sprint 3: Browser Automation (Core)
+- [ ] Sprint 4: UX & Polish
+- [ ] Sprint 5: Testing & QA
+- [ ] Sprint 6: Publishing
 
-### Coming Soon
+### Coming Later
 
-- [ ] Multi-city flight search
-- [ ] Package deals (flight + hotel)
-- [ ] Price alerts
-- [ ] Booking history access
+- ✈️ Flight search (deferred - low priority)
+- 📦 Package deals (flight + hotel)
+- 🔔 Price alerts
+- 📋 Booking history access
 
 ## Troubleshooting
 

@@ -1,5 +1,9 @@
 # Epic Breakdown - Booking.com Automation Skill
 
+**🎯 PROJECT FOCUS**: Hotel booking is HIGH PRIORITY. Flight search is LOW PRIORITY (deferred).
+
+---
+
 ## Epic 1: Foundation & Infrastructure
 **Issue**: #1  
 **Priority**: Critical  
@@ -113,14 +117,16 @@ Set up complete project infrastructure including GitHub repo, CI/CD, skill skele
 
 ---
 
-## Epic 2: Core Browser Automation
-**Issue**: #6  
+## Epic 2: Hotel Search (HIGH PRIORITY) 🏨
+**Issue**: #4  
 **Priority**: Critical  
-**Estimate**: 21 story points  
-**Status**: ⚪ Not Started
+**Estimate**: 13 story points  
+**Status**: ⚪ Next Sprint
 
 ### Goal
-Implement robust browser automation primitives for interacting with booking.com.
+Complete hotel search functionality from input to results presentation.
+
+**Note**: This is the PRIMARY focus. Flight search is deferred.
 
 ---
 
@@ -257,14 +263,16 @@ Implement robust browser automation primitives for interacting with booking.com.
 
 ---
 
-## Epic 3: Flight Search
-**Issue**: #12  
-**Priority**: High  
-**Estimate**: 13 story points  
+## Epic 3: Core Browser Automation
+**Issue**: #6  
+**Priority**: Critical  
+**Estimate**: 21 story points  
 **Status**: ⚪ Not Started
 
 ### Goal
-Complete flight search functionality from input to results presentation.
+Implement robust browser automation primitives for interacting with booking.com.
+
+**Note**: Shared foundation for both hotel and flight search.
 
 ---
 
@@ -376,14 +384,16 @@ Complete flight search functionality from input to results presentation.
 
 ---
 
-## Epic 4: Hotel Search
-**Issue**: #17  
-**Priority**: High  
+## Epic 4: Flight Search (LOW PRIORITY) ✈️
+**Issue**: #12  
+**Priority**: Low  
 **Estimate**: 13 story points  
-**Status**: ⚪ Not Started
+**Status**: ⚪ Deferred
 
 ### Goal
-Complete hotel search functionality from input to results presentation.
+Complete flight search functionality from input to results presentation.
+
+**Note**: DEFERRED - Hotel booking is the priority. This epic will be started after hotel search is complete.
 
 ---
 
@@ -733,18 +743,18 @@ Publish skill to clawhub and finalize for distribution.
 
 ---
 
-## Summary
+## Summary (Hotel-First Priority)
 
-| Epic | Stories | Tasks | Points | Status |
-|------|---------|-------|--------|--------|
-| 1. Foundation | 4 | 17 | 13 | 🟢 In Progress |
-| 2. Browser Automation | 5 | 24 | 21 | ⚪ Not Started |
-| 3. Flight Search | 4 | 19 | 13 | ⚪ Not Started |
-| 4. Hotel Search | 4 | 19 | 13 | ⚪ Not Started |
-| 5. UX & Polish | 3 | 13 | 8 | ⚪ Not Started |
-| 6. Testing & QA | 3 | 16 | 13 | ⚪ Not Started |
-| 7. Publishing | 2 | 9 | 5 | ⚪ Not Started |
-| **Total** | **25** | **117** | **86** | |
+| Epic | Stories | Tasks | Points | Priority | Status |
+|------|---------|-------|--------|----------|--------|
+| 1. Foundation | 4 | 17 | 13 | Critical | 🟢 In Progress |
+| 2. **Hotel Search** 🏨 | 4 | 19 | 13 | **Critical** | ⚪ **Next** |
+| 3. Browser Automation | 5 | 24 | 21 | Critical | ⚪ Not Started |
+| 4. Flight Search ✈️ | 4 | 19 | 13 | Low | ⚪ Deferred |
+| 5. UX & Polish | 3 | 13 | 8 | Medium | ⚪ Not Started |
+| 6. Testing & QA | 3 | 16 | 13 | High | ⚪ Not Started |
+| 7. Publishing | 2 | 9 | 5 | Medium | ⚪ Not Started |
+| **Total** | **25** | **117** | **86** | | |
 
 ---
 
