@@ -1,6 +1,6 @@
 ---
 name: booking-com-automation
-description: Automate hotel searches on booking.com. Use when: (1) searching for hotels in a destination, (2) comparing prices across dates, (3) finding accommodations within budget, (4) filtering by amenities and ratings. NOT for: completing bookings (manual confirmation required), managing existing reservations, flight search (coming soon), or non-booking.com travel sites.
+description: Automate complete hotel booking on booking.com from search to payment page. Use when: (1) searching for hotels, (2) viewing property details, (3) selecting rooms, (4) filling guest details, (5) reaching payment page. NOT for: completing payment (user finishes manually), managing existing reservations, flight search (deferred), or non-booking.com sites.
 metadata:
   {
     "openclaw":
@@ -32,15 +32,18 @@ Automate flight and hotel searches on booking.com using browser automation.
 - 💰 Comparing hotel prices across different dates
 - 🎯 Finding accommodations within a budget
 - ⭐ Filtering hotels by amenities, ratings, or location
-- 📊 Getting quick summaries of top 3-5 hotel options
+- 📊 Getting summaries of top 3-5 hotel options
+- 🛏️ **Selecting rooms and viewing rate options**
+- 📝 **Filling guest details automatically**
+- 💳 **Reaching payment page ready for completion**
 
 ❌ **DON'T use this skill when:**
 
-- Completing actual bookings (requires manual confirmation)
-- Managing or modifying existing reservations
-- Searching on other travel sites (Expedia, Kayak, etc.)
-- ✈️ Flight search (not yet implemented - coming soon)
-- Booking car rentals or airport taxis (not yet supported)
+- ✗ Completing payment (you finish manually at payment page)
+- ✗ Managing or modifying existing reservations
+- ✗ Searching on other travel sites (Expedia, Kayak, etc.)
+- ✗ ✈️ Flight search (deferred - hotel booking first)
+- ✗ Booking car rentals or airport taxis (not yet supported)
 
 ## Setup
 
@@ -63,7 +66,7 @@ Ensure you're logged into booking.com in your Chrome browser before using this s
 
 ## Usage
 
-### Hotel Search
+### Quick Search (Search Only)
 
 ```
 Find hotels in Paris, March 15-20, 2 guests, under $200/night
@@ -77,12 +80,32 @@ Search 4-star hotels in Barcelona near city center, April 10-15
 Best rated hotels in Tokyo with free WiFi and breakfast, May 1-7
 ```
 
+### Full Booking (Search → Payment Page)
+
 ```
-Hotels in New York with gym and pool, under $300/night, Manhattan area
+Book a hotel in Paris, March 15-20, 2 guests, budget $200/night
 ```
 
 ```
-Cheap hotels in London, any rating, March 10-15, 1 guest
+Find and reserve a hotel in Barcelona, April 10-15, I'll provide guest details
+```
+
+```
+Search hotels in Tokyo, select best value, fill my guest info, stop at payment
+```
+
+### Guest Profile (Save Your Details)
+
+```
+Save my guest profile: John Smith, john@email.com, +1-555-0123, USA
+```
+
+```
+Use my saved profile for booking
+```
+
+```
+Update my phone number to +1-555-9999
 ```
 
 ### Flexible Date Search
@@ -95,9 +118,9 @@ Hotels in Rome, weekend in March, compare prices across weekends
 Best hotel deals in Bangkok, flexible dates in April, show cheapest
 ```
 
-### Coming Soon ✈️
+### Coming Later ✈️
 
-Flight search is planned but not yet implemented. Hotel booking is the current focus.
+Flight search is deferred until hotel booking is complete.
 
 ## Output Format
 
@@ -165,24 +188,33 @@ Common errors and solutions:
 
 🚧 **Under Active Development**
 
-**Current Focus**: 🏨 Hotel Search  
+**Current Focus**: 🏨 Complete Hotel Booking (Search → Payment)  
 **Current Sprint**: Foundation & Infrastructure (Epic 1)  
 **Next Sprint**: Hotel Search (Epic 2)
 
 See [GitHub Projects](https://github.com/stofancy/booking-com-automation/projects) for roadmap.
 
-### Roadmap
+### Full Booking Flow Roadmap
 
-- [x] Sprint 1: Foundation & Infrastructure (In Progress)
-- [ ] Sprint 2: Hotel Search (Next)
-- [ ] Sprint 3: Browser Automation (Core)
-- [ ] Sprint 4: UX & Polish
-- [ ] Sprint 5: Testing & QA
-- [ ] Sprint 6: Publishing
+| Phase | Epic | Feature | Status |
+|-------|------|---------|--------|
+| 1 | Epic 1 | Foundation & Infrastructure | 🟢 65% |
+| 2 | Epic 2 | Hotel Search | ⚪ Next |
+| 3 | Epic 3 | Browser Automation (Core) | ⚪ |
+| 4 | Epic 4 | Property Selection & Details | ⚪ |
+| 5 | Epic 5 | Room Selection | ⚪ |
+| 6 | Epic 6 | Guest Details Form | ⚪ |
+| 7 | Epic 7 | Payment Page Handoff | ⚪ |
+| 8+ | Epic 9-11 | Polish, Testing, Publishing | ⚪ |
+
+### MVP vs Full Booking
+
+**MVP (Search Only)**: Epics 1-3 - Search and present hotel options  
+**Full Booking**: Epics 1-7 - Complete booking to payment page
 
 ### Coming Later
 
-- ✈️ Flight search (deferred - low priority)
+- ✈️ Flight search (deferred - hotel booking first)
 - 📦 Package deals (flight + hotel)
 - 🔔 Price alerts
 - 📋 Booking history access

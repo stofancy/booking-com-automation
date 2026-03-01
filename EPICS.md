@@ -1,6 +1,13 @@
 # Epic Breakdown - Booking.com Automation Skill
 
-**🎯 PROJECT FOCUS**: Hotel booking is HIGH PRIORITY. Flight search is LOW PRIORITY (deferred).
+**🎯 PROJECT FOCUS**: Complete hotel booking from search to payment page. Flight search is LOW PRIORITY (deferred).
+
+**📋 FULL BOOKING FLOW**:
+```
+Search → Results → Property Details → Room Selection → Guest Details → Payment Page (user completes) → Confirmation
+```
+
+**See EPICS-UPDATED.md for complete epic breakdown with reservation epics.**
 
 ---
 
