@@ -71,6 +71,13 @@ describe('Search Flow', () => {
       Property 1: Hôtel Paris - 9.2 Wonderful - CNY 1,500
       Property 2: Hotel Eiffel - 8.8 Excellent - CNY 2,000
       Property 3: Le Grand Hotel - 9.0 Wonderful - CNY 1,800
+      Property 4: Hotel Louvre - 9.1 Wonderful - CNY 2,200
+      Property 5: Hotel Marais - 8.9 Excellent - CNY 1,600
+      Property 6: Hotel Latin - 8.7 Excellent - CNY 1,400
+      Property 7: Hotel Bastille - 8.6 Excellent - CNY 1,500
+      Property 8: Hotel Montmartre - 9.0 Wonderful - CNY 1,700
+      Property 9: Hotel Champs - 9.3 Wonderful - CNY 2,500
+      Property 10: Hotel Trocadero - 9.1 Wonderful - CNY 2,300
     `;
     
     // Count properties in snapshot
@@ -100,14 +107,17 @@ describe('Search Flow', () => {
     // Verify extracted data matches expected format
     const testData = [
       { extracted: 9.2, expected: 9.2, name: 'Rating' },
-      { extracted: 1500, expected: { min: 1000, max: 3000 }, name: 'Price' },
-      { extracted: 'Hôtel Paris', expected: 'Paris', name: 'Name' }
+      { extracted: 1500, expected: { min: 1000, max: 3000 }, name: 'Price' }
     ];
     
     testData.forEach(test => {
       const accurate = verifyAccuracy(test.extracted, test.expected);
       assert.ok(accurate, `${test.name} should match expected value`);
     });
+    
+    // String comparison test
+    const nameTest = verifyAccuracy('Hôtel Paris', 'Paris');
+    assert.ok(nameTest, 'Name should contain expected text');
   });
   
 });
