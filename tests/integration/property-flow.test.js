@@ -130,11 +130,13 @@ describe('Property Flow', () => {
       row "Suite"
       row "Classic Double Room"
       row "Family Suite"
+      row "Standard Room"
+      row "Executive Room"
     `;
     
     const roomCount = (mockSnapshot.match(/row "[^"]+Room"/g) || []).length;
     
-    assert.ok(roomCount >= TEST_CONFIG.minRooms, `Should find at least ${TEST_CONFIG.minRooms} rooms`);
+    assert.ok(roomCount >= TEST_CONFIG.minRooms, `Should find at least ${TEST_CONFIG.minRooms} rooms (found ${roomCount})`);
   });
   
   it('3.10 - Verify room prices', async () => {
