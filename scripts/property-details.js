@@ -80,16 +80,24 @@ async function extractPropertyDetails(browser) {
 
 /**
  * Extract hotel name from snapshot
+ * Verified on live booking.com (ref=e235, e247)
  */
 function extractHotelName(snapshot) {
-  // Look for H1 or main title
-  const h1Match = snapshot.match(/\[level=1\][^]]*?:\s*([^\n]+)/i);
-  if (h1Match && h1Match[1]) {
-    return h1Match[1].trim();
+  // Pattern 1: Look for heading with hotel name (verified pattern)
+  const headingMatch = snapshot.match(/heading "([^"]+)" \[level=2\]/i);
+  if (headingMatch && headingMatch[1]) {
+    return headingMatch[1].trim();
   }
   
-  // Look for hotel name pattern
-  const nameMatch = snapshot.match(/(?:Hotel|Inn|Resort|Suites|Apartments)\s+[A-Z][a-zA-Z\s&]+/i);
+  // Pattern 2: Look for H1 breadcrumb
+  const h1Match = snapshot.match(/\[level=1\][^]]*?:\s*([^\n]+)/i);
+  if (h1Match && h1Match[1]) {
+    const name = h1Match[1].split('(')[0].trim(); // Remove "(Hotel) (France)" suffix
+    return name;
+  }
+  
+  // Pattern 3: Look for hotel name pattern
+  const nameMatch = snapshot.match(/(?:Hotel|Inn|Resort|Suites|Apartments|Hôtel)\s+[A-Z][a-zA-ZÀ-ÿ\s&]+/i);
   if (nameMatch) {
     return nameMatch[0].trim();
   }
@@ -99,15 +107,22 @@ function extractHotelName(snapshot) {
 
 /**
  * Extract star rating from snapshot
+ * Verified on live booking.com (ref=e199, e211)
  */
 function extractStarRating(snapshot) {
-  // Look for star rating pattern (e.g., "4-star hotel" or "⭐⭐⭐⭐")
+  // Pattern 1: Look for "X out of 5 stars" button (verified pattern)
+  const starButtonMatch = snapshot.match(/button "(\d) out of 5 stars"/i);
+  if (starButtonMatch && starButtonMatch[1]) {
+    return parseInt(starButtonMatch[1]);
+  }
+  
+  // Pattern 2: Look for "X-star hotel"
   const starMatch = snapshot.match(/(\d)-star/i);
   if (starMatch && starMatch[1]) {
     return parseInt(starMatch[1]);
   }
   
-  // Count star emojis
+  // Pattern 3: Count star emojis
   const starEmojis = (snapshot.match(/⭐/g) || []).length;
   if (starEmojis > 0) {
     return starEmojis;
@@ -118,12 +133,19 @@ function extractStarRating(snapshot) {
 
 /**
  * Extract guest score from snapshot
+ * Verified on live booking.com (ref=e315, e327)
  */
 function extractGuestScore(snapshot) {
-  // Look for score pattern (e.g., "9.2" or "9,2")
-  const scoreMatch = snapshot.match(/["']([89]\.\d|10\.0)["']/);
+  // Pattern 1: Look for quoted score (verified pattern: generic "9.2")
+  const scoreMatch = snapshot.match(/generic "(\d\.\d)"/);
   if (scoreMatch && scoreMatch[1]) {
-    return parseFloat(scoreMatch[1].replace(',', '.'));
+    return parseFloat(scoreMatch[1]);
+  }
+  
+  // Pattern 2: Look for score pattern (e.g., "9.2" or "9,2")
+  const altScoreMatch = snapshot.match(/["']([89]\.\d|10\.0)["']/);
+  if (altScoreMatch && altScoreMatch[1]) {
+    return parseFloat(altScoreMatch[1].replace(',', '.'));
   }
   
   return null;
@@ -131,12 +153,19 @@ function extractGuestScore(snapshot) {
 
 /**
  * Extract review count from snapshot
+ * Verified on live booking.com (ref=e319, e331)
  */
 function extractReviewCount(snapshot) {
-  // Look for review count pattern (e.g., "1,234 reviews")
-  const reviewMatch = snapshot.match(/(\d{1,3}(?:,\d{3})*)\s*reviews/i);
+  // Pattern 1: Look for "· 1,493 reviews" pattern (verified)
+  const reviewMatch = snapshot.match(/·\s*([\d,]+)\s*reviews/i);
   if (reviewMatch && reviewMatch[1]) {
     return parseInt(reviewMatch[1].replace(/,/g, ''));
+  }
+  
+  // Pattern 2: Look for "1,234 reviews" pattern
+  const altReviewMatch = snapshot.match(/(\d{1,3}(?:,\d{3})*)\s*reviews/i);
+  if (altReviewMatch && altReviewMatch[1]) {
+    return parseInt(altReviewMatch[1].replace(/,/g, ''));
   }
   
   return null;
@@ -144,10 +173,20 @@ function extractReviewCount(snapshot) {
 
 /**
  * Extract review category from snapshot
+ * Verified on live booking.com (ref=e318, e330)
  */
 function extractReviewCategory(snapshot) {
-  // Look for category words
-  const categories = ['Exceptional', 'Very Good', 'Good', 'Pleasant', 'Okay', 'Poor'];
+  // Look for category in order of quality (first match wins)
+  const categories = [
+    'Exceptional',  // 9.0+
+    'Wonderful',    // 9.0+
+    'Very Good',    // 8.0+
+    'Good',         // 7.0+
+    'Pleasant',     // 6.0+
+    'Okay',         // 5.0+
+    'Poor'          // <5.0
+  ];
+  
   for (const category of categories) {
     if (snapshot.includes(category)) {
       return category;
