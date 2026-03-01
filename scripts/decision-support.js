@@ -267,7 +267,24 @@ function highlightConcerns(propertyDetails) {
  * Create price breakdown from room options
  */
 function createPriceBreakdown(roomOptions) {
-  if (!roomOptions || roomOptions.length === 0) {
+  // Handle null/undefined
+  if (!roomOptions) {
+    return {
+      basePrice: null,
+      taxes: null,
+      fees: null,
+      total: null,
+      perNight: null,
+      currency: 'USD'
+    };
+  }
+  
+  // Handle single room object (not array)
+  if (!Array.isArray(roomOptions)) {
+    roomOptions = [roomOptions];
+  }
+  
+  if (roomOptions.length === 0) {
     return {
       basePrice: null,
       taxes: null,
@@ -280,7 +297,7 @@ function createPriceBreakdown(roomOptions) {
   
   // Find lowest price room
   const prices = roomOptions
-    .filter(r => r.pricePerNight)
+    .filter(r => r && r.pricePerNight)
     .map(r => r.pricePerNight);
   
   const lowestPrice = prices.length > 0 ? Math.min(...prices) : null;
@@ -515,8 +532,61 @@ module.exports = {
   summarizeCancellation,
   generateRecommendation,
   suggestAlternatives,
-  formatDecisionSummary
+  formatDecisionSummary,
+  getScoreRating,
+  askNextAction
 };
+
+/**
+ * Ask user for next action based on recommendation
+ */
+function askNextAction(recommendation) {
+  if (!recommendation) {
+    return {
+      question: 'What would you like to do?',
+      options: [
+        '1. See more details',
+        '2. Compare with other properties',
+        '3. Search different area',
+        '4. Start over'
+      ]
+    };
+  }
+  
+  if (recommendation.action === 'book') {
+    return {
+      question: 'This property looks great! What would you like to do?',
+      options: [
+        '1. Book this property',
+        '2. See more details',
+        '3. Compare with other options',
+        '4. Search different location'
+      ]
+    };
+  }
+  
+  if (recommendation.action === 'consider') {
+    return {
+      question: 'This property has some pros and cons. What would you like to do?',
+      options: [
+        '1. See more details',
+        '2. Compare with similar properties',
+        '3. Look for better options',
+        '4. Search different area'
+      ]
+    };
+  }
+  
+  return {
+    question: 'This property may not be the best fit. What would you like to do?',
+    options: [
+      '1. See other recommendations',
+      '2. Adjust search filters',
+      '3. Search different area',
+      '4. View all available options'
+    ]
+  };
+}
 
 // CLI mode for testing
 if (require.main === module) {
