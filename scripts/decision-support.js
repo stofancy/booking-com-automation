@@ -286,9 +286,9 @@ function createPriceBreakdown(roomOptions) {
     
     return {
       basePrice: perNight,
-      taxes: Math.round(perNight * 0.10),
-      fees: Math.round(perNight * 0.05),
-      total: total || Math.round(perNight * 1.15),
+      taxes: total ? Math.round(perNight * 0.10) : null,
+      fees: total ? Math.round(perNight * 0.05) : null,
+      total: total,  // Only set total if explicitly provided
       perNight: perNight,
       currency: roomOptions.currency || 'USD'
     };
@@ -555,7 +555,10 @@ module.exports = {
 /**
  * Ask user for next action based on recommendation
  */
-function askNextAction(recommendation) {
+function askNextAction(summary) {
+  // Handle summary object with recommendation property
+  const recommendation = summary && summary.recommendation ? summary.recommendation : summary;
+  
   if (!recommendation) {
     return {
       question: 'What would you like to do?',
