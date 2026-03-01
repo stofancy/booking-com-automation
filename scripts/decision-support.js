@@ -2,69 +2,68 @@
 
 /**
  * Decision Support for booking.com
- * Helps users make informed booking decisions with summaries, highlights, and recommendations
+ * Analyzes property data and provides recommendations to users
  * 
  * Usage:
- *   const { createDecisionSummary, highlightConcerns } = require('./decision-support.js');
- *   const summary = createDecisionSummary(propertyDetails);
+ *   const { createDecisionSummary, formatDecisionSummary } = require('./decision-support.js');
+ *   const summary = createDecisionSummary(propertyDetails, roomOptions);
+ * 
+ * Depends on: property-details.js (Story 4.2)
  */
 
+const { extractPropertyDetails } = require('./property-details.js');
+
 /**
- * Create a comprehensive decision summary for a property
- * @param {Object} property - Property details object
- * @returns {Object} Decision summary with highlights, concerns, and recommendation
+ * Create comprehensive decision summary
+ * @param {Object} propertyDetails - Property data from Story 4.2
+ * @param {Array} roomOptions - Room options from room extraction
+ * @returns {Object} Decision summary
  */
-function createDecisionSummary(property) {
-  try {
-    const summary = {
-      property: property.name || 'Unknown Property',
-      overallScore: calculateOverallScore(property),
-      keyFeatures: extractKeyFeatures(property),
-      concerns: highlightConcerns(property),
-      priceBreakdown: createPriceBreakdown(property),
-      cancellationSummary: summarizeCancellation(property),
-      recommendation: generateRecommendation(property),
-      alternatives: suggestAlternatives(property),
-      timestamp: new Date().toISOString()
-    };
-    
-    return summary;
-  } catch (error) {
-    console.error('Error creating decision summary:', error.message);
-    return {
-      error: error.message,
-      timestamp: new Date().toISOString()
-    };
-  }
+function createDecisionSummary(propertyDetails, roomOptions = []) {
+  const summary = {
+    property: propertyDetails.name || 'Unknown Property',
+    overallScore: calculateOverallScore(propertyDetails),
+    keyFeatures: extractKeyFeatures(propertyDetails),
+    concerns: highlightConcerns(propertyDetails),
+    priceBreakdown: createPriceBreakdown(roomOptions),
+    cancellationSummary: summarizeCancellation(propertyDetails),
+    recommendation: generateRecommendation(propertyDetails, roomOptions),
+    alternatives: suggestAlternatives(propertyDetails, roomOptions),
+    timestamp: new Date().toISOString()
+  };
+  
+  return summary;
 }
 
 /**
- * Calculate overall score based on multiple factors
+ * Calculate overall property score (0-100)
  */
-function calculateOverallScore(property) {
+function calculateOverallScore(propertyDetails) {
   let score = 0;
-  let maxScore = 100;
+  const maxScore = 100;
   
   // Guest score (40 points max)
-  if (property.guestScore) {
-    score += (property.guestScore / 10) * 40;
+  if (propertyDetails.guestScore) {
+    score += (propertyDetails.guestScore / 10) * 40;
   }
   
   // Star rating (20 points max)
-  if (property.starRating) {
-    score += (property.starRating / 5) * 20;
+  if (propertyDetails.starRating) {
+    score += (propertyDetails.starRating / 5) * 20;
   }
   
   // Amenities (20 points max)
-  if (property.amenities && property.amenities.length > 0) {
-    const importantAmenities = ['Free WiFi', 'Breakfast included', 'Air conditioning', 'Parking'];
-    const hasImportant = property.amenities.filter(a => importantAmenities.includes(a)).length;
+  if (propertyDetails.amenities && propertyDetails.amenities.length > 0) {
+    const importantAmenities = ['Free Wifi', 'Breakfast included', 'Air conditioning', 'Parking'];
+    const hasImportant = propertyDetails.amenities.filter(a => 
+      importantAmenities.some(imp => a.toLowerCase().includes(imp.toLowerCase()))
+    ).length;
     score += (hasImportant / importantAmenities.length) * 20;
   }
   
   // Location (20 points max)
-  if (property.distanceFromCenter) {
-    const distanceMatch = property.distanceFromCenter.match(/(\d+\.?\d*)/);
+  if (propertyDetails.distanceFromCenter) {
+    const distanceMatch = propertyDetails.distanceFromCenter.match(/(\d+\.?\d*)/);
     if (distanceMatch) {
       const distance = parseFloat(distanceMatch[1]);
       if (distance <= 1) score += 20;  // Within 1km
@@ -95,36 +94,36 @@ function getScoreRating(score) {
 /**
  * Extract key features (top 3-5 highlights)
  */
-function extractKeyFeatures(property) {
+function extractKeyFeatures(propertyDetails) {
   const features = [];
   
   // High guest score
-  if (property.guestScore && property.guestScore >= 9.0) {
+  if (propertyDetails.guestScore && propertyDetails.guestScore >= 9.0) {
     features.push({
       type: 'positive',
-      text: `Exceptional guest rating: ${property.guestScore}/10`,
+      text: `Exceptional guest rating: ${propertyDetails.guestScore}/10`,
       icon: '⭐'
     });
-  } else if (property.guestScore && property.guestScore >= 8.0) {
+  } else if (propertyDetails.guestScore && propertyDetails.guestScore >= 8.0) {
     features.push({
       type: 'positive',
-      text: `Very good guest rating: ${property.guestScore}/10`,
+      text: `Very good guest rating: ${propertyDetails.guestScore}/10`,
       icon: '⭐'
     });
   }
   
   // Star rating
-  if (property.starRating && property.starRating >= 4) {
+  if (propertyDetails.starRating && propertyDetails.starRating >= 4) {
     features.push({
       type: 'positive',
-      text: `${property.starRating}-star property`,
+      text: `${propertyDetails.starRating}-star property`,
       icon: '🏨'
     });
   }
   
   // Important amenities
   const importantAmenities = {
-    'Free WiFi': '📶',
+    'Free Wifi': '📶',
     'Breakfast included': '🥐',
     'Free parking': '🅿️',
     'Pool': '🏊',
@@ -133,8 +132,8 @@ function extractKeyFeatures(property) {
     'Air conditioning': '❄️'
   };
   
-  if (property.amenities) {
-    property.amenities.slice(0, 3).forEach(amenity => {
+  if (propertyDetails.amenities) {
+    propertyDetails.amenities.slice(0, 3).forEach(amenity => {
       const icon = importantAmenities[amenity] || '✓';
       features.push({
         type: 'positive',
@@ -145,8 +144,8 @@ function extractKeyFeatures(property) {
   }
   
   // Location
-  if (property.distanceFromCenter) {
-    const distanceMatch = property.distanceFromCenter.match(/(\d+\.?\d*)/);
+  if (propertyDetails.distanceFromCenter) {
+    const distanceMatch = propertyDetails.distanceFromCenter.match(/(\d+\.?\d*)/);
     if (distanceMatch) {
       const distance = parseFloat(distanceMatch[1]);
       if (distance <= 1) {
@@ -166,7 +165,7 @@ function extractKeyFeatures(property) {
   }
   
   // Free cancellation
-  if (property.cancellationPolicy && property.cancellationPolicy.includes('Free cancellation')) {
+  if (propertyDetails.cancellationPolicy && propertyDetails.cancellationPolicy.includes('Free cancellation')) {
     features.push({
       type: 'positive',
       text: 'Free cancellation available',
@@ -180,32 +179,32 @@ function extractKeyFeatures(property) {
 /**
  * Highlight potential concerns
  */
-function highlightConcerns(property) {
+function highlightConcerns(propertyDetails) {
   const concerns = [];
   
   // Low guest score
-  if (property.guestScore && property.guestScore < 7.0) {
+  if (propertyDetails.guestScore && propertyDetails.guestScore < 7.0) {
     concerns.push({
       type: 'warning',
-      text: `Low guest rating: ${property.guestScore}/10`,
+      text: `Low guest rating: ${propertyDetails.guestScore}/10`,
       severity: 'high'
     });
   }
   
   // Few reviews
-  if (property.reviewCount && property.reviewCount < 50) {
+  if (propertyDetails.reviewCount && propertyDetails.reviewCount < 50) {
     concerns.push({
       type: 'warning',
-      text: `Limited reviews (${property.reviewCount}) - less reliable rating`,
+      text: `Limited reviews (${propertyDetails.reviewCount}) - less reliable rating`,
       severity: 'medium'
     });
   }
   
   // Missing important amenities
-  const mustHaveAmenities = ['Free WiFi'];
-  if (property.amenities) {
+  const mustHaveAmenities = ['Free Wifi'];
+  if (propertyDetails.amenities) {
     mustHaveAmenities.forEach(amenity => {
-      if (!property.amenities.includes(amenity)) {
+      if (!propertyDetails.amenities.some(a => a.toLowerCase().includes(amenity.toLowerCase()))) {
         concerns.push({
           type: 'warning',
           text: `Missing: ${amenity}`,
@@ -216,8 +215,8 @@ function highlightConcerns(property) {
   }
   
   // Far from center
-  if (property.distanceFromCenter) {
-    const distanceMatch = property.distanceFromCenter.match(/(\d+\.?\d*)/);
+  if (propertyDetails.distanceFromCenter) {
+    const distanceMatch = propertyDetails.distanceFromCenter.match(/(\d+\.?\d*)/);
     if (distanceMatch) {
       const distance = parseFloat(distanceMatch[1]);
       if (distance > 5) {
@@ -231,7 +230,7 @@ function highlightConcerns(property) {
   }
   
   // Strict cancellation
-  if (property.cancellationPolicy && property.cancellationPolicy.includes('Non-refundable')) {
+  if (propertyDetails.cancellationPolicy && propertyDetails.cancellationPolicy.includes('Non-refundable')) {
     concerns.push({
       type: 'warning',
       text: 'Non-refundable rate - no cancellation allowed',
@@ -240,7 +239,7 @@ function highlightConcerns(property) {
   }
   
   // Check for common concerns in description
-  if (property.description) {
+  if (propertyDetails.description) {
     const concernKeywords = {
       'no elevator': 'No elevator access',
       'shared bathroom': 'Shared bathroom facilities',
@@ -249,7 +248,7 @@ function highlightConcerns(property) {
       'renovation': 'Property under renovation'
     };
     
-    const descLower = property.description.toLowerCase();
+    const descLower = propertyDetails.description.toLowerCase();
     Object.keys(concernKeywords).forEach(keyword => {
       if (descLower.includes(keyword)) {
         concerns.push({
@@ -265,39 +264,53 @@ function highlightConcerns(property) {
 }
 
 /**
- * Create price breakdown
+ * Create price breakdown from room options
  */
-function createPriceBreakdown(property) {
-  const breakdown = {
+function createPriceBreakdown(roomOptions) {
+  if (!roomOptions || roomOptions.length === 0) {
+    return {
+      basePrice: null,
+      taxes: null,
+      fees: null,
+      total: null,
+      perNight: null,
+      currency: 'USD'
+    };
+  }
+  
+  // Find lowest price room
+  const prices = roomOptions
+    .filter(r => r.pricePerNight)
+    .map(r => r.pricePerNight);
+  
+  const lowestPrice = prices.length > 0 ? Math.min(...prices) : null;
+  
+  if (lowestPrice) {
+    return {
+      basePrice: lowestPrice,
+      taxes: Math.round(lowestPrice * 0.10), // Estimate 10% taxes
+      fees: Math.round(lowestPrice * 0.05),  // Estimate 5% fees
+      total: Math.round(lowestPrice * 1.15),
+      perNight: lowestPrice,
+      currency: 'USD'
+    };
+  }
+  
+  return {
     basePrice: null,
     taxes: null,
     fees: null,
     total: null,
-    perNight: property.pricePerNight || null,
-    currency: property.currency || 'USD'
+    perNight: null,
+    currency: 'USD'
   };
-  
-  // If we have total price, estimate breakdown
-  if (property.totalPrice && property.pricePerNight) {
-    breakdown.total = property.totalPrice;
-    breakdown.basePrice = property.pricePerNight;
-    
-    // Estimate taxes and fees (typically 10-15%)
-    const estimatedTaxes = Math.round(property.pricePerNight * 0.10);
-    const estimatedFees = Math.round(property.pricePerNight * 0.05);
-    
-    breakdown.taxes = estimatedTaxes;
-    breakdown.fees = estimatedFees;
-  }
-  
-  return breakdown;
 }
 
 /**
  * Summarize cancellation policy
  */
-function summarizeCancellation(property) {
-  if (!property.cancellationPolicy) {
+function summarizeCancellation(propertyDetails) {
+  if (!propertyDetails.cancellationPolicy) {
     return {
       type: 'unknown',
       text: 'Cancellation policy not specified',
@@ -305,7 +318,7 @@ function summarizeCancellation(property) {
     };
   }
   
-  const policy = property.cancellationPolicy.toLowerCase();
+  const policy = propertyDetails.cancellationPolicy.toLowerCase();
   
   if (policy.includes('free cancellation')) {
     if (policy.includes('until')) {
@@ -342,17 +355,17 @@ function summarizeCancellation(property) {
   
   return {
     type: 'moderate',
-    text: property.cancellationPolicy,
+    text: propertyDetails.cancellationPolicy,
     flexible: false
   };
 }
 
 /**
- * Generate recommendation
+ * Generate recommendation based on property data
  */
-function generateRecommendation(property) {
-  const score = calculateOverallScore(property);
-  const concerns = highlightConcerns(property);
+function generateRecommendation(propertyDetails, roomOptions) {
+  const score = calculateOverallScore(propertyDetails);
+  const concerns = highlightConcerns(propertyDetails);
   
   // Count high severity concerns
   const highSeverityConcerns = concerns.filter(c => c.severity === 'high').length;
@@ -396,13 +409,13 @@ function generateRecommendation(property) {
 }
 
 /**
- * Suggest alternatives to consider
+ * Suggest alternatives based on property weaknesses
  */
-function suggestAlternatives(property) {
+function suggestAlternatives(propertyDetails, roomOptions) {
   const alternatives = [];
   
   // Suggest looking for properties with better ratings
-  if (property.guestScore && property.guestScore < 8.5) {
+  if (propertyDetails.guestScore && propertyDetails.guestScore < 8.5) {
     alternatives.push({
       type: 'better_rating',
       text: 'Consider properties with 8.5+ guest rating',
@@ -411,7 +424,7 @@ function suggestAlternatives(property) {
   }
   
   // Suggest looking for free cancellation
-  if (property.cancellationPolicy && !property.cancellationPolicy.includes('Free cancellation')) {
+  if (propertyDetails.cancellationPolicy && !propertyDetails.cancellationPolicy.includes('Free cancellation')) {
     alternatives.push({
       type: 'flexible_cancellation',
       text: 'Look for properties with free cancellation',
@@ -420,8 +433,8 @@ function suggestAlternatives(property) {
   }
   
   // Suggest looking for better location
-  if (property.distanceFromCenter) {
-    const distanceMatch = property.distanceFromCenter.match(/(\d+\.?\d*)/);
+  if (propertyDetails.distanceFromCenter) {
+    const distanceMatch = propertyDetails.distanceFromCenter.match(/(\d+\.?\d*)/);
     if (distanceMatch && parseFloat(distanceMatch[1]) > 2) {
       alternatives.push({
         type: 'better_location',
@@ -432,7 +445,7 @@ function suggestAlternatives(property) {
   }
   
   // Suggest looking for more amenities
-  if (!property.amenities || property.amenities.length < 3) {
+  if (!propertyDetails.amenities || propertyDetails.amenities.length < 3) {
     alternatives.push({
       type: 'more_amenities',
       text: 'Look for properties with more amenities',
@@ -492,47 +505,6 @@ function formatDecisionSummary(summary) {
   return lines.join('\n');
 }
 
-/**
- * Ask user for next action
- */
-function askNextAction(summary) {
-  const rec = summary.recommendation;
-  
-  if (rec && rec.action === 'book') {
-    return {
-      question: 'This property looks great! What would you like to do?',
-      options: [
-        '1. Book this property',
-        '2. See more details',
-        '3. Compare with other options',
-        '4. Search different area'
-      ]
-    };
-  }
-  
-  if (rec && rec.action === 'consider') {
-    return {
-      question: 'This property has some pros and cons. What would you like to do?',
-      options: [
-        '1. See more details',
-        '2. Compare with similar properties',
-        '3. Look for better options',
-        '4. Search different area'
-      ]
-    };
-  }
-  
-  return {
-    question: 'This property may not be the best fit. What would you like to do?',
-    options: [
-      '1. See other recommendations',
-      '2. Adjust search filters',
-      '3. Search different area',
-      '4. View all available options'
-    ]
-  };
-}
-
 // Export for use in other modules
 module.exports = {
   createDecisionSummary,
@@ -543,8 +515,7 @@ module.exports = {
   summarizeCancellation,
   generateRecommendation,
   suggestAlternatives,
-  formatDecisionSummary,
-  askNextAction
+  formatDecisionSummary
 };
 
 // CLI mode for testing
@@ -552,6 +523,6 @@ if (require.main === module) {
   console.log('Decision Support Module');
   console.log('\nUsage:');
   console.log('  const { createDecisionSummary, formatDecisionSummary } = require("./decision-support.js");');
-  console.log('  const summary = createDecisionSummary(propertyDetails);');
+  console.log('  const summary = createDecisionSummary(propertyDetails, roomOptions);');
   console.log('  console.log(formatDecisionSummary(summary));');
 }
