@@ -4,13 +4,15 @@
   "description": "OpenClaw skill for automating booking.com flight and hotel searches",
   "main": "scripts/search-flights.js",
   "scripts": {
-    "test": "echo \"No tests yet\" && exit 0",
-    "test:integration": "echo \"No integration tests yet\" && exit 0",
-    "test:coverage": "echo \"Coverage not available yet\" && exit 0",
-    "lint": "echo \"Linting not configured yet\" && exit 0",
-    "lint:fix": "echo \"Linting not configured yet\" && exit 0",
-    "package": "echo \"Packaging not available until dependencies installed\" && exit 1",
-    "validate": "node scripts/validate-skill.js"
+    "test": "node --test tests/unit/*.test.js",
+    "test:integration": "node --test tests/integration/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage tests/",
+    "test:watch": "node --test --watch tests/unit/*.test.js",
+    "lint": "node scripts/validate-skill.js",
+    "lint:fix": "node scripts/validate-skill.js",
+    "package": "node scripts/package-skill.js",
+    "validate": "node scripts/validate-skill.js",
+    "parser:test": "node scripts/search-parser.js"
   },
   "keywords": [
     "openclaw",
@@ -22,9 +24,7 @@
   ],
   "author": "stofancy",
   "license": "MIT",
-  "devDependencies": {
-    "eslint": "^8.57.0"
-  },
+  "devDependencies": {},
   "engines": {
     "node": ">=18.0.0"
   },

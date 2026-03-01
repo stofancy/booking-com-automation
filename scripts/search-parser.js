@@ -92,6 +92,9 @@ function parseDestination(query) {
   const monthDatePattern = new RegExp(`\\b(${monthNames})\\b\\s+\\d{1,2}(?:st|nd|rd|th)?(?:\\s*[-–to]+\\s*\\d{1,2}(?:st|nd|rd|th)?)?`, 'gi');
   cleanedQuery = cleanedQuery.replace(monthDatePattern, '');
   
+  // Remove relative date patterns (next weekend, tomorrow, this weekend)
+  cleanedQuery = cleanedQuery.replace(/\b(next weekend|this weekend|tomorrow|next week)\b/gi, '');
+  
   // Now extract destination from cleaned query
   const patterns = [
     /(?:hotels?|accommodation|stay|places?)\s+(?:in|at|to|for)\s+([a-zA-Z\s,]+)/i,
@@ -109,9 +112,10 @@ function parseDestination(query) {
       dest = dest.replace(/\b(under|below|less than|cheap|budget)\b.*$/gi, '').trim();
       // Clean up trailing commas and words
       dest = dest.replace(/[,]+\s*$/, '').trim();
-      dest = dest.replace(/\s+(and|to)\s*$/i, '').trim();
-      // Remove any remaining trailing punctuation
-      dest = dest.replace(/[,\s]+$/, '');
+      dest = dest.replace(/\s+(and|to|for)\s*$/i, '').trim();
+      // Remove any remaining trailing punctuation or prepositions
+      dest = dest.replace(/[,;\s]+$/, '').trim();
+      dest = dest.replace(/\s+for\s*$/, '').trim();
       
       if (dest.length > 0 && dest.length < 100) {
         return dest;
@@ -134,7 +138,8 @@ function parseDates(query) {
   };
 
   // Check for flexible dates
-  const flexibleMatch = query.match(/(?:flexible|pm|\+\/-)\s*(\d+)\s*(?:days?|d)/i);
+  const flexibleMatch = query.match(/(?:flexible|±|\+\/-)\s*(\d+)\s*(?:days?|d)/i) || 
+                         query.match(/(?:\+|-)(\d+)\s*(?:days?|d)/i);
   if (flexibleMatch) {
     result.flexible = true;
     result.flexibleDays = parseInt(flexibleMatch[1]);
@@ -146,8 +151,8 @@ function parseDates(query) {
     /(\w+)\s+(\d{1,2})(?:st|nd|rd|th)?\s*[-–to]+\s*(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?/i,
     // March 15 to 20
     /(\w+)\s+(\d{1,2})(?:st|nd|rd|th)?\s+(?:to|through)\s+(\d{1,2})(?:st|nd|rd|th)?/i,
-    // 2026-03-15 to 2026-03-20
-    /(\d{4})-(\d{1,2})-(\d{1,2})\s*[-–to]+\s*(\d{4})?-(\d{1,2})-(\d{1,2})/i
+    // 2026-03-15 to 2026-03-20 (ISO format)
+    /(\d{4})-(\d{1,2})-(\d{1,2})\s*(?:[-–to]+|to)\s*(\d{4})-(\d{1,2})-(\d{1,2})/i
   ];
 
   for (const pattern of datePatterns) {
@@ -198,16 +203,19 @@ function extractDatesFromMatch(match) {
       checkIn = new Date(year, month, day1);
       checkOut = new Date(year, month, day2);
     }
-  } else if (match[1] && match[2] && match[3] && match[4] && match[5] && match[6]) {
-    // ISO format: 2026-03-15 to 2026-03-20
-    year = parseInt(match[1]);
-    const month1 = parseInt(match[2]) - 1;
-    const day1 = parseInt(match[3]);
-    const month2 = parseInt(match[5]) - 1;
-    const day2 = parseInt(match[6]);
+  } else if (match.length >= 6 && match[1] && match[2] && match[3]) {
+    // Check if first group is a year (ISO format)
+    if (/^\d{4}$/.test(match[1])) {
+      // ISO format: 2026-03-15 to 2026-03-20
+      year = parseInt(match[1]);
+      const month1 = parseInt(match[2]) - 1;
+      const day1 = parseInt(match[3]);
+      const month2 = parseInt(match[5]) - 1;
+      const day2 = parseInt(match[6]);
 
-    checkIn = new Date(year, month1, day1);
-    checkOut = new Date(year, month2, day2);
+      checkIn = new Date(year, month1, day1);
+      checkOut = new Date(year, month2, day2);
+    }
   }
 
   return {
