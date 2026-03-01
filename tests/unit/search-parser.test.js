@@ -58,11 +58,12 @@ describe('Search Parser', () => {
       assert.ok(result.checkOut.includes('2026-03-20'), `checkOut should be 2026-03-20, got ${result.checkOut}`);
     });
 
-    it.todo('should parse ISO date format', () => {
-      // TODO: ISO format parsing needs improvement
+    it('should parse ISO date format', () => {
       const result = parseDates('hotels from 2026-04-01 to 2026-04-05');
       assert.ok(result.checkIn, 'checkIn should exist for ISO format');
       assert.ok(result.checkOut, 'checkOut should exist for ISO format');
+      assert.strictEqual(result.checkIn, '2026-04-01');
+      assert.strictEqual(result.checkOut, '2026-04-05');
     });
 
     it('should parse "next weekend"', () => {

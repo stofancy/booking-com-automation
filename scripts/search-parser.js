@@ -145,14 +145,14 @@ function parseDates(query) {
     result.flexibleDays = parseInt(flexibleMatch[1]);
   }
 
-  // Try to parse absolute dates (March 15-20, Mar 15 to 20, etc.)
+  // Try to parse absolute dates - ISO format FIRST (most specific)
   const datePatterns = [
+    // 2026-03-15 to 2026-04-05 (ISO format) - MUST BE FIRST
+    /(\d{4})-(\d{1,2})-(\d{1,2})\s+(?:to|-|–)\s+(\d{4})-(\d{1,2})-(\d{1,2})/i,
     // March 15-20, 2026
     /(\w+)\s+(\d{1,2})(?:st|nd|rd|th)?\s*[-–to]+\s*(\d{1,2})(?:st|nd|rd|th)?(?:,\s*(\d{4}))?/i,
     // March 15 to 20
-    /(\w+)\s+(\d{1,2})(?:st|nd|rd|th)?\s+(?:to|through)\s+(\d{1,2})(?:st|nd|rd|th)?/i,
-    // 2026-03-15 to 2026-03-20 (ISO format)
-    /(\d{4})-(\d{1,2})-(\d{1,2})\s*(?:[-–to]+|to)\s*(\d{4})-(\d{1,2})-(\d{1,2})/i
+    /(\w+)\s+(\d{1,2})(?:st|nd|rd|th)?\s+(?:to|through)\s+(\d{1,2})(?:st|nd|rd|th)?/i
   ];
 
   for (const pattern of datePatterns) {
@@ -185,9 +185,22 @@ function extractDatesFromMatch(match) {
   let year = now.getFullYear();
   let checkIn, checkOut;
 
-  // Handle different match formats
-  if (match[1] && match[2] && match[3]) {
-    // Month name format: March 15-20
+  // Check if this is ISO format (4-digit year followed by dash)
+  // Pattern: YYYY-MM-DD to YYYY-MM-DD has 6 capture groups
+  if (match.length === 7 && match[1] && match[4] && /^\d{4}$/.test(match[1]) && /^\d{4}$/.test(match[4])) {
+    // ISO format: 2026-04-01 to 2026-04-05
+    const year1 = parseInt(match[1]);
+    const month1 = parseInt(match[2]) - 1;
+    const day1 = parseInt(match[3]);
+    const year2 = parseInt(match[4]);
+    const month2 = parseInt(match[5]) - 1;
+    const day2 = parseInt(match[6]);
+
+    checkIn = new Date(year1, month1, day1);
+    checkOut = new Date(year2, month2, day2);
+  }
+  // Month name format: March 15-20
+  else if (match[1] && match[2] && match[3]) {
     const month = MONTHS[match[1].toLowerCase()];
     if (month !== undefined) {
       const day1 = parseInt(match[2]);
@@ -202,19 +215,6 @@ function extractDatesFromMatch(match) {
 
       checkIn = new Date(year, month, day1);
       checkOut = new Date(year, month, day2);
-    }
-  } else if (match.length >= 6 && match[1] && match[2] && match[3]) {
-    // Check if first group is a year (ISO format)
-    if (/^\d{4}$/.test(match[1])) {
-      // ISO format: 2026-03-15 to 2026-03-20
-      year = parseInt(match[1]);
-      const month1 = parseInt(match[2]) - 1;
-      const day1 = parseInt(match[3]);
-      const month2 = parseInt(match[5]) - 1;
-      const day2 = parseInt(match[6]);
-
-      checkIn = new Date(year, month1, day1);
-      checkOut = new Date(year, month2, day2);
     }
   }
 
