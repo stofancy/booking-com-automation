@@ -1,256 +1,19 @@
 # Integration Test Plan
 
 **Created**: 2026-03-01  
-**Priority**: High  
-**Estimated Time**: 3-5 hours for full implementation
+**Status**: Ready for Implementation  
+**Test Framework**: Node.js native test runner
 
 ---
 
 ## 🎯 Test Strategy
 
-Three levels of integration testing:
+Based on manual testing results (40/40 tests passing), we'll create integration tests that:
 
-### Level 1: Semi-Integration (Mock HTML) - 1-2 hours
-Test parsers against real HTML samples from booking.com
-
-### Level 2: Full Integration (Live Browser) - 2-3 hours  
-Test complete flow on live booking.com with browser automation
-
-### Level 3: End-to-End (Complete User Journey) - 1-2 hours
-Test entire booking flow from search to property details
-
----
-
-## 📋 Level 1: Semi-Integration Tests (Mock HTML)
-
-### Test 1.1: Search Results HTML Parsing
-
-**File**: `tests/integration/search-results.test.js`
-
-**Setup**:
-```javascript
-// Load real HTML sample from booking.com search results
-const searchResultsHtml = fs.readFileSync(
-  'tests/mocks/booking-search-results.html', 
-  'utf8'
-);
-```
-
-**Tests**:
-- [ ] Parse hotel names from real HTML
-- [ ] Parse prices from real HTML
-- [ ] Parse ratings from real HTML
-- [ ] Parse locations from real HTML
-- [ ] Handle multiple result cards
-- [ ] Handle Genius badges
-- [ ] Handle free cancellation badges
-
-**Mock Files Needed**:
-- `tests/mocks/booking-search-results.html`
-- `tests/mocks/booking-search-results-empty.html`
-- `tests/mocks/booking-search-results-error.html`
-
-**Estimated Time**: 1 hour
-
----
-
-### Test 1.2: Property Details HTML Parsing
-
-**File**: `tests/integration/property-details.test.js`
-
-**Setup**:
-```javascript
-// Load real HTML sample from property page
-const propertyHtml = fs.readFileSync(
-  'tests/mocks/booking-property-page.html',
-  'utf8'
-);
-```
-
-**Tests**:
-- [ ] Extract hotel name
-- [ ] Extract star rating
-- [ ] Extract guest score
-- [ ] Extract amenities list
-- [ ] Extract room options
-- [ ] Extract cancellation policy
-- [ ] Handle missing data gracefully
-
-**Mock Files Needed**:
-- `tests/mocks/booking-property-page.html`
-- `tests/mocks/booking-property-page-no-rooms.html`
-
-**Estimated Time**: 1 hour
-
----
-
-## 📋 Level 2: Full Integration Tests (Live Browser)
-
-### Test 2.1: Browser Connection
-
-**File**: `tests/integration/browser-connection.test.js`
-
-**Tests**:
-```javascript
-// Test browser is accessible
-const status = await browser.status({ profile: 'chrome' });
-assert.ok(status.running, 'Browser should be running');
-
-// Test tab is attached
-const tabs = await browser.tabs({ profile: 'chrome' });
-assert.ok(tabs.length > 0, 'At least one tab should be open');
-
-// Test snapshot works
-const snapshot = await browser.snapshot({ profile: 'chrome' });
-assert.ok(snapshot.length > 0, 'Snapshot should not be empty');
-```
-
-**Requirements**:
-- Chrome with Browser Relay extension
-- booking.com tab attached
-- Network connection
-
-**Estimated Time**: 30 minutes
-
----
-
-### Test 2.2: Search Form Automation
-
-**File**: `tests/integration/search-form.test.js`
-
-**Tests**:
-```javascript
-// Navigate to booking.com
-await browser.navigate({ 
-  profile: 'chrome', 
-  targetUrl: 'https://www.booking.com' 
-});
-
-// Wait for homepage
-await waitForPageLoad(browser);
-
-// Fill search form
-await fillSearchForm(browser, {
-  destination: 'Paris',
-  checkIn: '2026-04-01',
-  checkOut: '2026-04-05',
-  adults: 2
-});
-
-// Submit search
-await submitSearch(browser);
-
-// Verify results page loaded
-const snapshot = await browser.snapshot({ profile: 'chrome' });
-assert.ok(snapshot.includes('Paris'), 'Should show Paris results');
-```
-
-**Test Cases**:
-- [ ] Navigate to booking.com
-- [ ] Fill destination field
-- [ ] Fill dates (absolute dates)
-- [ ] Fill dates (relative dates)
-- [ ] Fill guest count
-- [ ] Submit search
-- [ ] Wait for results
-- [ ] Handle no results
-- [ ] Handle errors
-
-**Estimated Time**: 1.5 hours
-
----
-
-### Test 2.3: Results Extraction
-
-**File**: `tests/integration/results-extraction.test.js`
-
-**Tests**:
-```javascript
-// Extract results from live page
-const results = await extractResults(browser, { maxResults: 5 });
-
-assert.ok(results.length > 0, 'Should extract at least one result');
-assert.ok(results[0].name, 'Should have hotel name');
-assert.ok(results[0].pricePerNight, 'Should have price');
-assert.ok(results[0].rating, 'Should have rating');
-```
-
-**Test Cases**:
-- [ ] Extract hotel names
-- [ ] Extract prices
-- [ ] Extract ratings
-- [ ] Extract locations
-- [ ] Extract amenities
-- [ ] Handle Genius badges
-- [ ] Handle free cancellation
-- [ ] Limit to maxResults
-
-**Estimated Time**: 1 hour
-
----
-
-### Test 2.4: Property Selection
-
-**File**: `tests/integration/property-selection.test.js`
-
-**Tests**:
-```javascript
-// Select first property
-const result = await selectProperty(browser, results, 1);
-
-assert.ok(result.success, 'Should successfully select property');
-
-// Verify on property details page
-const snapshot = await browser.snapshot({ profile: 'chrome' });
-assert.ok(
-  isOnPropertyDetailsPage(snapshot),
-  'Should be on property details page'
-);
-```
-
-**Test Cases**:
-- [ ] Click on property
-- [ ] Navigate to details page
-- [ ] Wait for page load
-- [ ] Handle popups (cookies)
-- [ ] Go back to results
-
-**Estimated Time**: 1 hour
-
----
-
-## 📋 Level 3: End-to-End Tests
-
-### Test 3.1: Complete User Journey
-
-**File**: `tests/integration/complete-flow.test.js`
-
-**Test**:
-```javascript
-// Complete flow from search to property details
-const searchParams = parseSearchQuery('Hotels in Paris, April 1-5');
-await fillSearchForm(browser, searchParams);
-await submitSearch(browser);
-const results = await extractResults(browser);
-const presentation = await presentResults(results);
-const selected = await selectProperty(browser, results, 1);
-const details = await extractPropertyDetails(browser);
-
-// Verify complete flow
-assert.ok(selected.success, 'Should select property');
-assert.ok(details.name, 'Should extract property details');
-```
-
-**Flow**:
-1. Parse search query
-2. Fill search form
-3. Submit search
-4. Extract results
-5. Present results
-6. Select property
-7. Extract property details
-
-**Estimated Time**: 1.5 hours
+1. **Run on real booking.com** (not mocks)
+2. **Use Chrome extension relay** (profile="chrome")
+3. **Test complete user flows** (end-to-end)
+4. **Verify extraction accuracy** (compare extracted vs actual)
 
 ---
 
@@ -258,87 +21,250 @@ assert.ok(details.name, 'Should extract property details');
 
 ```
 tests/
-├── integration/
-│   ├── search-results.test.js       (Level 1)
-│   ├── property-details.test.js     (Level 1)
-│   ├── browser-connection.test.js   (Level 2)
-│   ├── search-form.test.js          (Level 2)
-│   ├── results-extraction.test.js   (Level 2)
-│   ├── property-selection.test.js   (Level 2)
-│   └── complete-flow.test.js        (Level 3)
-├── mocks/
-│   ├── booking-search-results.html
-│   ├── booking-search-results-empty.html
-│   ├── booking-property-page.html
-│   └── booking-property-page-no-rooms.html
-└── smoke-test.js                    (Already exists)
+├── unit/                          # Existing unit tests (186 tests)
+│   ├── search-parser.test.js
+│   ├── search-form.test.js
+│   ├── results-extractor.test.js
+│   ├── results-presenter.test.js
+│   ├── property-selector.test.js
+│   ├── property-details.test.js
+│   ├── decision-support.test.js
+│   ├── room-extractor.test.js
+│   ├── rate-comparison.test.js
+│   └── room-selection.test.js
+│
+├── integration/                   # NEW - Integration tests
+│   ├── browser-connection.test.js    # Test browser connectivity
+│   ├── search-flow.test.js           # Search → Results flow
+│   ├── property-flow.test.js         # Results → Property → Rooms flow
+│   ├── booking-flow.test.js          # Complete booking flow (partial)
+│   └── helpers/
+│       └── browser-helpers.js        # Shared browser utilities
+│
+└── mocks/                         # HTML samples for unit tests
+    └── booking-search-results.html
 ```
 
 ---
 
-## 🎯 Quick Test Plan (What I'll do NOW)
+## 🧪 Integration Test Suites
 
-Before implementing full integration suite, I'll do a **quick REAL test**:
+### Suite 1: Browser Connection (5 tests)
 
-### Quick Real Test Checklist (30 min)
+**File**: `tests/integration/browser-connection.test.js`
 
-1. **[ ] Open booking.com in Chrome**
-   - Navigate to booking.com
-   - Attach tab with Browser Relay
+| Test | Description | Expected |
+|------|-------------|----------|
+| 1.1 | Browser relay is running | status.running = true |
+| 1.2 | Can connect to Chrome | profile="chrome" works |
+| 1.3 | Can navigate to booking.com | URL = booking.com |
+| 1.4 | Can capture snapshot | snapshot.length > 0 |
+| 1.5 | Can interact with elements | click/type works |
 
-2. **[ ] Test Search Form**
-   - Verify destination input works
-   - Verify date picker works
-   - Verify guest selector works
-   - Submit a real search
-
-3. **[ ] Test Results Page**
-   - Verify results load
-   - Check property card structure
-   - Verify selectors match current UI
-
-4. **[ ] Test Property Details**
-   - Click on a property
-   - Verify details page loads
-   - Check for hotel name, ratings, amenities
-
-5. **[ ] Document Findings**
-   - Note any selector mismatches
-   - Note any UI changes
-   - Update selectors if needed
+**Estimated Time**: 2-3 minutes
 
 ---
 
-## 📊 Test Priority
+### Suite 2: Search Flow (8 tests)
 
-| Priority | Test | Time | Value |
-|----------|------|------|-------|
-| 🔴 **Critical** | Quick Real Test (NOW) | 30 min | Validate current implementation |
-| 🟡 **High** | Level 1 (Mock HTML) | 2 hours | Test parsers with real HTML |
-| 🟡 **High** | Level 2 (Live Browser) | 3 hours | Test automation flow |
-| 🟢 **Medium** | Level 3 (E2E) | 1.5 hours | Test complete journey |
+**File**: `tests/integration/search-flow.test.js`
+
+| Test | Description | Expected |
+|------|-------------|----------|
+| 2.1 | Navigate to homepage | URL = booking.com |
+| 2.2 | Fill destination field | "Paris" entered |
+| 2.3 | Fill dates | Dates selected |
+| 2.4 | Fill guests | 2 adults set |
+| 2.5 | Submit search | Results page loads |
+| 2.6 | Extract results | 10+ properties found |
+| 2.7 | Verify result structure | Names, prices, ratings extracted |
+| 2.8 | Verify result accuracy | Extracted matches displayed |
+
+**Estimated Time**: 5-7 minutes
+
+---
+
+### Suite 3: Property Flow (10 tests)
+
+**File**: `tests/integration/property-flow.test.js`
+
+| Test | Description | Expected |
+|------|-------------|----------|
+| 3.1 | Click first property | Property page loads |
+| 3.2 | Extract property name | Name matches listing |
+| 3.3 | Extract star rating | Rating extracted (4 stars) |
+| 3.4 | Extract guest score | Score extracted (9.2) |
+| 3.5 | Extract review count | Count extracted (1,493) |
+| 3.6 | Extract location | Address extracted |
+| 3.7 | Extract facilities | 10+ amenities found |
+| 3.8 | Navigate to rooms | Room table visible |
+| 3.9 | Extract room options | 5+ rooms found |
+| 3.10 | Verify room prices | Prices extracted correctly |
+
+**Estimated Time**: 8-10 minutes
+
+---
+
+### Suite 4: Booking Flow (7 tests)
+
+**File**: `tests/integration/booking-flow.test.js`
+
+| Test | Description | Expected |
+|------|-------------|----------|
+| 4.1 | Select available dates | Dates with availability |
+| 4.2 | View room options | Room table loads |
+| 4.3 | Extract room details | Name, beds, size extracted |
+| 4.4 | Extract pricing | Price + taxes extracted |
+| 4.5 | Extract policies | Cancellation policy extracted |
+| 4.6 | Click Reserve button | Guest details page OR error |
+| 4.7 | Verify guest form fields | Name, email, phone fields exist |
+
+**Note**: Test 4.6-4.7 may require actual booking or stop at payment
+
+**Estimated Time**: 5-7 minutes
+
+---
+
+## 🔧 Test Helpers
+
+**File**: `tests/integration/helpers/browser-helpers.js`
+
+```javascript
+// Shared utilities for integration tests
+
+export async function waitForPageLoad(browser, timeout = 10000) {
+  // Wait for page to fully load
+}
+
+export async function takeSnapshot(browser) {
+  // Capture page snapshot with error handling
+}
+
+export async function verifyElementExists(browser, ref) {
+  // Verify element exists on page
+}
+
+export async function extractAndVerify(browser, extractor, expected) {
+  // Extract data and verify against expected values
+}
+```
+
+---
+
+## 📊 Test Configuration
+
+**File**: `tests/integration/config.js`
+
+```javascript
+export const TEST_CONFIG = {
+  browser: {
+    profile: 'chrome',
+    timeout: 30000
+  },
+  booking: {
+    baseUrl: 'https://www.booking.com',
+    testDestination: 'Paris',
+    testDates: {
+      checkin: '2026-03-30',
+      checkout: '2026-03-31'
+    },
+    testGuests: 2
+  },
+  thresholds: {
+    minResults: 10,
+    minRooms: 3,
+    accuracyThreshold: 0.9
+  }
+};
+```
+
+---
+
+## 🚀 Running Integration Tests
+
+### Run All Tests
+```bash
+npm test
+```
+
+### Run Integration Tests Only
+```bash
+npm run test:integration
+```
+
+### Run Specific Suite
+```bash
+node --test tests/integration/search-flow.test.js
+```
+
+### Run with Coverage
+```bash
+npm run test:coverage
+```
+
+---
+
+## ⚠️ Test Considerations
+
+### Rate Limiting
+- Add delays between tests (1-2 seconds)
+- Don't run tests in parallel on booking.com
+- Respect robots.txt
+
+### Data Volatility
+- Prices change frequently
+- Availability changes
+- Use flexible assertions (ranges, not exact values)
+
+### Selector Stability
+- Use ARIA refs when possible
+- Fall back to data-testid
+- Avoid CSS selectors that change
+
+### Authentication
+- Tests run as logged-in user (Genius Level 1)
+- Some features may require login
+- Document auth requirements
+
+---
+
+## 📈 Implementation Priority
+
+| Priority | Suite | Tests | Est. Time |
+|----------|-------|-------|-----------|
+| 🔴 High | Browser Connection | 5 | 1 hour |
+| 🔴 High | Search Flow | 8 | 2 hours |
+| 🟡 Medium | Property Flow | 10 | 3 hours |
+| 🟡 Medium | Booking Flow | 7 | 2 hours |
+| 🟢 Low | Helpers & Config | - | 1 hour |
+| **Total** | | **30 tests** | **9 hours** |
 
 ---
 
 ## ✅ Definition of Done
 
-Integration testing is complete when:
+Integration tests are complete when:
 
-- [ ] Quick real test completed (selectors verified)
-- [ ] Level 1 tests implemented and passing
-- [ ] Level 2 tests implemented and passing
-- [ ] Level 3 tests implemented and passing
-- [ ] All selectors updated and accurate
-- [ ] Error scenarios tested
-- [ ] CI runs integration tests on push
-
----
-
-**Next Action**: Quick Real Test on booking.com (30 min)  
-**After That**: Implement Level 1 tests (Mock HTML)  
-**Then**: Continue with Story 4.2 or full integration suite
+- [ ] All 30 integration tests written
+- [ ] All tests passing on real booking.com
+- [ ] Tests run in <30 minutes total
+- [ ] No rate limiting issues
+- [ ] CI configured to run integration tests
+- [ ] Test documentation complete
 
 ---
 
-**Created**: 2026-03-01 16:21 GMT+8  
-**Status**: 🟡 Ready to execute Quick Real Test
+## 🎯 Next Steps
+
+1. **Create browser helpers** (1 hour)
+2. **Implement browser connection tests** (1 hour)
+3. **Implement search flow tests** (2 hours)
+4. **Implement property flow tests** (3 hours)
+5. **Implement booking flow tests** (2 hours)
+6. **Configure CI for integration tests** (1 hour)
+
+**Total Estimated Time**: 10 hours
+
+---
+
+**Ready to start implementation!**
