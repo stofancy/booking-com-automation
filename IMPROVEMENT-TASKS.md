@@ -76,20 +76,12 @@
 
 ---
 
-#### Task 1.2: ISO Date Format Parsing
+#### Task 1.2: ISO Date Format Parsing ✅ COMPLETE
+**Status**: ✅ FIXED  
 **File**: `scripts/search-parser.js` - `parseDates()` function  
-**Issue**: ISO format (2026-04-01 to 2026-04-05) not parsing correctly  
-**Test**: `tests/unit/search-parser.test.js` line 61 (marked TODO)  
-**Priority**: 🔴 Critical  
-
-**Fix Required**:
-```javascript
-// Current regex doesn't handle ISO format properly
-// Need to fix pattern matching for: YYYY-MM-DD to YYYY-MM-DD
-```
-
-**Estimated Effort**: 1-2 hours  
-**Test Required**: Unit test (already exists, just needs to pass)
+**Fixed**: 2026-03-01  
+**Commit**: `38e34b9`  
+**Test Results**: 111/111 tests passing (100%)
 
 ---
 
