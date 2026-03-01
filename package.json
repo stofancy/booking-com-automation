@@ -1,0 +1,39 @@
+{
+  "name": "booking-com-automation",
+  "version": "0.1.0",
+  "description": "OpenClaw skill for automating booking.com flight and hotel searches",
+  "main": "scripts/search-flights.js",
+  "scripts": {
+    "test": "node --test tests/unit/*.test.js",
+    "test:integration": "node --test tests/integration/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage tests/",
+    "lint": "eslint scripts/ tests/",
+    "lint:fix": "eslint scripts/ tests/ --fix",
+    "package": "node scripts/package-skill.js",
+    "validate": "node scripts/validate-skill.js"
+  },
+  "keywords": [
+    "openclaw",
+    "skill",
+    "booking",
+    "automation",
+    "browser",
+    "travel"
+  ],
+  "author": "stofancy",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stofancy/booking-com-automation.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stofancy/booking-com-automation/issues"
+  },
+  "homepage": "https://github.com/stofancy/booking-com-automation#readme"
+}
