@@ -1,136 +1,232 @@
 # Project Status - Booking.com Automation Skill
 
-**Last Updated**: 2026-03-01 11:00 GMT+8  
+**Last Updated**: 2026-03-01 11:20 GMT+8  
 **Current Phase**: Epic 1 - Foundation & Infrastructure  
 **Sprint**: 1  
-**Focus**: 🏨 Hotel Booking (Flight search deferred)
+**Scope**: 🏨 Full Hotel Booking (Search → Payment Page)
 
 ---
 
-## 🎯 Overall Progress
+## 🎯 PROJECT SCOPE UPDATE
 
-| Epic | Priority | Status | Progress | Stories | Tasks |
-|------|----------|--------|----------|---------|-------|
-| 1. Foundation | Critical | 🟢 In Progress | 65% | 4 | 17 |
-| 2. **Hotel Search** 🏨 | **Critical** | ⚪ Next | 0% | 4 | 19 |
-| 3. Browser Automation | Critical | ⚪ Not Started | 0% | 5 | 24 |
-| 4. Flight Search ✈️ | Low | ⚪ Deferred | 0% | 4 | 19 |
-| 5. UX & Polish | Medium | ⚪ Not Started | 0% | 3 | 13 |
-| 6. Testing & QA | High | ⚪ Not Started | 0% | 3 | 16 |
-| 7. Publishing | Medium | ⚪ Not Started | 0% | 2 | 9 |
-| **Total** | | | **~9%** | **25** | **117** |
+**NEW**: Complete hotel booking automation from search to payment page!
+
+### Full Booking Flow
+```
+1. Search (destination, dates, guests, filters)
+   ↓
+2. Browse Results (top 3-5 options)
+   ↓
+3. Select Property (view details, photos, reviews)  ← NEW EPIC 4
+   ↓
+4. Select Room (room type, rate, policies)         ← NEW EPIC 5
+   ↓
+5. Guest Details (name, email, phone, requests)    ← NEW EPIC 6
+   ↓
+6. Payment Page (STOP - user completes manually)   ← NEW EPIC 7
+   ↓
+7. Confirmation (capture reference - optional)
+```
+
+### Payment Approach
+- ✅ Skill navigates through all steps to payment page
+- ✅ Skill presents booking summary for confirmation
+- ✅ **User completes payment manually** (card details, billing address)
+- ✅ Optional: Skill can capture confirmation after user completes
+
+---
+
+## 📊 Overall Progress
+
+| Epic | Focus | Priority | Progress | Status |
+|------|-------|----------|----------|--------|
+| 1. Foundation | Infrastructure | Critical | 65% | 🟢 In Progress |
+| 2. **Hotel Search** 🏨 | Search | **Critical** | 0% | ⚪ Next |
+| 3. Browser Automation | Core | Critical | 0% | ⚪ |
+| 4. **Property Selection** 🏨 | Browse → Details | **Critical** | 0% | ⚪ |
+| 5. **Room Selection** 🛏️ | Choose Room | **Critical** | 0% | ⚪ |
+| 6. **Guest Details** 📝 | Form Fill | **Critical** | 0% | ⚪ |
+| 7. **Payment Handoff** 💳 | User Completion | **Critical** | 0% | ⚪ |
+| 8. Flight Search ✈️ | Search | Low | 0% | ⚪ Deferred |
+| 9. UX & Polish | Experience | Medium | 0% | ⚪ |
+| 10. Testing & QA | Quality | High | 0% | ⚪ |
+| 11. Publishing | Distribution | Medium | 0% | ⚪ |
+| **Total** | | | **~6%** | |
 
 ---
 
 ## ✅ Completed (Sprint 1)
 
-### Project Initialization (T1.1.x) - 100% ✅
-- [x] T1.1.1 - Create GitHub private repository
-- [x] T1.1.2 - Initialize git with proper config
-- [x] T1.1.3 - Create .gitignore file
-- [x] T1.1.4 - Write README.md
-- [x] T1.1.5 - Create package.json
+### Project Initialization - 100% ✅
+- Repository created and configured
+- Git workflows active
+- Issue templates created
+- SKILL.md with full booking scope
 
-### CI/CD Pipeline (T1.2.x) - 100% ✅
-- [x] T1.2.1 - Create test.yml workflow
-- [x] T1.2.2 - Create package.yml workflow
-- [x] T1.2.3 - Workflows pushed to GitHub
-- [x] T1.2.4 - GitHub Actions enabled
-
-### Issue Templates (T1.3.1-3) - 100% ✅
-- [x] T1.3.1 - Create epic.md template
-- [x] T1.3.2 - Create user-story.md template
-- [x] T1.3.3 - Create task.md template
-
-### Skill Skeleton (T1.4.1) - 100% ✅
-- [x] T1.4.1 - Create SKILL.md with metadata (hotel-focused)
+### New This Update:
+- ✅ **4 new epics added** for complete booking flow
+- ✅ **GitHub issues created** for all epics (#1-10)
+- ✅ **EPICS-UPDATED.md** with detailed breakdown
+- ✅ **SKILL.md updated** to reflect full booking capability
 
 ---
 
-## ⏳ In Progress
+## 🎫 GitHub Issues
 
-### Project Board (T1.3.4-5) - 50%
-- [x] T1.3.4 - Create GitHub Project board
-- [ ] T1.3.5 - Populate board with all epics/stories
+| Issue | Epic | Priority |
+|-------|------|----------|
+| #1 | Foundation & Infrastructure | Critical |
+| #2 | Hotel Search | Critical |
+| #3 | Browser Automation | Critical |
+| #4 | Property Selection & Details | Critical |
+| #5 | Room Selection | Critical |
+| #6 | Guest Details Form | Critical |
+| #7 | Payment Page Handoff | Critical |
+| #8 | Flight Search | Low (Deferred) |
+| #9 | UX & Polish | Medium |
+| #10 | Testing & QA | High |
+| #11 | Publishing | Medium |
 
-### Skill Scripts (T1.4.2-5) - 0%
-- [ ] T1.4.2 - Create scripts/ directory structure
-- [ ] T1.4.3 - Create references/ directory structure
-- [ ] T1.4.4 - Write validate-skill.js (exists, needs testing)
-- [ ] T1.4.5 - Write package-skill.js (exists, needs testing)
-
----
-
-## 📊 GitHub Repository
-
-- **URL**: https://github.com/stofancy/booking-com-automation
-- **Visibility**: Private
-- **Branch**: main
-- **Commits**: 6
-- **Issues**: 6 epics (#1-6)
-- **Project Board**: https://github.com/users/stofancy/projects/1
-- **Actions**: CI/CD workflows active
+**Total**: 11 epics, ~34 user stories, ~162 tasks
 
 ---
 
-## 🎯 Project Focus Change
+## 📁 New Files Created
 
-**Decision**: Hotel booking is HIGH PRIORITY. Flight search is DEFERRED.
-
-### Rationale
-- User requested focus on hotel booking
-- Flight search moved to Epic 4 (low priority)
-- Hotel Search (Epic 2) will be started immediately after Epic 1 completion
-
-### Updated Roadmap
-1. ✅ Sprint 1: Foundation (Epic 1) - In Progress
-2. 🟢 Sprint 2: Hotel Search (Epic 2) - Next
-3. 🟡 Sprint 3: Browser Automation (Epic 3) - Core foundation
-4. ⚪ Sprint 4+: UX, Testing, Publishing
-5. ⚪ Future: Flight Search (when hotel is complete)
+| File | Purpose |
+|------|---------|
+| `EPICS-UPDATED.md` | Complete epic breakdown with reservation flow |
+| `.state/checkpoint.json` | Development state (crash recovery) |
+| `STATUS.md` | This status dashboard |
 
 ---
 
-## 📁 Deliverables Created
+## 🎯 Critical Path
 
-1. ✅ Private GitHub repository with 6 commits
-2. ✅ Project structure (scripts/, references/, tests/)
-3. ✅ SKILL.md (hotel-focused OpenClaw skill definition)
-4. ✅ EPICS.md (25 stories, 117 tasks - hotel prioritized)
-5. ✅ PROJECT_PLAN.md (sprint tracking)
-6. ✅ Issue templates (epic, user-story, task)
-7. ✅ CI/CD workflows (test.yml, package.yml) - Active on GitHub
-8. ✅ Validation and packaging scripts
-9. ✅ State checkpoint system for crash recovery
-10. ✅ GitHub Project board for Kanban tracking
+```
+Epic 1 (Foundation) [65%]
+    ↓
+Epic 2 (Hotel Search) [Next]
+    ↓
+Epic 3 (Browser Automation) [Can parallelize]
+    ↓
+Epic 4 (Property Selection)
+    ↓
+Epic 5 (Room Selection)
+    ↓
+Epic 6 (Guest Details)
+    ↓
+Epic 7 (Payment Handoff) ✅ BOOKING COMPLETE
+```
+
+**MVP** (Search Only): Epics 1-3 → ~3 sprints  
+**Full Booking**: Epics 1-7 → ~7-8 sprints
+
+---
+
+## 📈 Sprint 1 Status
+
+### Completed Tasks (11/17)
+- [x] T1.1.1-5: Project initialization
+- [x] T1.2.1-2: CI/CD workflows
+- [x] T1.3.1-3: Issue templates
+- [x] T1.4.1: SKILL.md created
+
+### In Progress (6/17)
+- [ ] T1.3.4-5: Project board population
+- [ ] T1.4.2-5: Skill scripts testing
+
+### Blockers
+- None ✅
+
+---
+
+## 🔍 What I Learned About booking.com
+
+Based on my research, here's the complete hotel booking flow:
+
+### Step 1: Search
+- Enter destination, dates, guests
+- Apply filters (price, stars, amenities, rating)
+- View results list
+
+### Step 2: Results
+- See property cards with price, rating, location
+- Sort by: price, rating, distance, popularity
+- Click property for details
+
+### Step 3: Property Details
+- View photos, description, amenities
+- Read guest reviews
+- See location on map
+- Check cancellation policy
+
+### Step 4: Room Selection
+- See all available room types
+- Compare rates (refundable vs non-refundable)
+- See what's included (breakfast, WiFi, etc.)
+- Select room and click "I'll reserve"
+
+### Step 5: Guest Details
+- Enter: Full name, email, phone, country
+- Add: Special requests (optional)
+- Accept: Terms and conditions
+- Click: "Continue to payment"
+
+### Step 6: Payment Page ⚠️
+- **Skill stops here**
+- User enters: Card details, billing address
+- User completes: Payment manually
+- Skill can: Wait and capture confirmation
+
+### Step 7: Confirmation (Optional)
+- Booking reference number
+- Check-in/check-out details
+- Property contact info
+- Cancellation deadline
 
 ---
 
 ## 🎯 Next Actions
 
 ### Immediate (Complete Sprint 1)
-1. [ ] Populate GitHub Project board with all stories/tasks
-2. [ ] Test validation script (`npm run validate`)
-3. [ ] Test packaging script (`npm run package`)
-4. [ ] Commit and push final Sprint 1 items
+1. [ ] Populate GitHub Project board with all stories
+2. [ ] Test validation script
+3. [ ] Test packaging script
+4. [ ] Commit and push
 
-### Sprint 2 Preview (Epic 2 - Hotel Search)
+### Sprint 2 (Epic 2 - Hotel Search)
 1. [ ] Create user stories for hotel search
-2. [ ] Implement hotel search input parser
-3. [ ] Implement hotel search form automation
-4. [ ] Implement result extraction and formatting
+2. [ ] Implement search input parser
+3. [ ] Implement search form automation
+4. [ ] Implement result extraction
+
+### After Sprint 2
+- Begin Epic 4-7 (reservation flow) in parallel with Epic 3 (browser automation)
 
 ---
 
 ## 💡 Notes
 
-- **Crash Recovery**: Development state tracked in `.state/checkpoint.json`
-- **Agile Methodology**: Kanban with GitHub Projects
-- **CI/CD**: GitHub Actions runs tests on every push
-- **Skill Distribution**: Will publish to clawhub.com upon completion
-- **Hotel First**: Flight search deferred until hotel booking is complete
+- **Crash Recovery**: State tracked in `.state/checkpoint.json`
+- **Agile**: Kanban with GitHub Projects
+- **CI/CD**: GitHub Actions on every push
+- **Distribution**: Will publish to clawhub.com
+- **Hotel First**: Flight search deferred
+- **Payment**: User completes manually (security best practice)
 
 ---
 
-**Estimated Completion**: 6-8 weeks (hotel focus)  
-**Next Sprint Planning**: After Epic 1 completion (1-2 days remaining)
+## 📊 Repository
+
+- **URL**: https://github.com/stofancy/booking-com-automation
+- **Visibility**: Private
+- **Commits**: 7
+- **Issues**: 11 epics created
+- **Project Board**: https://github.com/users/stofancy/projects/1
+
+---
+
+**Estimated Completion**: 8-10 weeks (full booking flow)  
+**MVP (Search Only)**: 3-4 weeks  
+**Next Sprint Planning**: After Epic 1 completion (1-2 days)
