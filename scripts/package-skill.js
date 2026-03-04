@@ -95,8 +95,15 @@ if (!hasArchiver) {
   });
   
   archive.pipe(output);
-  archive.directory(SKILL_ROOT, PACKAGE_NAME, {
-    ignore: ['node_modules', '.git', '.state', 'dist', '*.log', '.DS_Store', 'coverage']
+  
+  // Add files with ignore patterns
+  const ignorePatterns = ['node_modules', '.git', '.state', 'dist', '*.log', '.DS_Store', 'coverage', 'openclaw_skill_development_best_practice.md'];
+  
+  archive.glob('**/*', {
+    cwd: SKILL_ROOT,
+    ignore: ignorePatterns,
+    dot: true
   });
+  
   archive.finalize();
 }
