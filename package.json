@@ -1,6 +1,6 @@
 {
   "name": "booking-com-automation",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "OpenClaw skill for automating booking.com flight and hotel searches",
   "main": "scripts/search-flights.js",
   "scripts": {
