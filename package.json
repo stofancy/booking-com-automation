@@ -13,6 +13,7 @@
     "lint:fix": "node scripts/validate-skill.js",
     "package": "node scripts/package-skill.js",
     "validate": "node scripts/validate-skill.js",
+    "release": "node scripts/release.js",
     "parser:test": "node scripts/search-parser.js"
   },
   "keywords": [
