@@ -96,14 +96,47 @@ if (!hasArchiver) {
   
   archive.pipe(output);
   
-  // Add files with ignore patterns
-  const ignorePatterns = ['node_modules', '.git', '.state', 'dist', '*.log', '.DS_Store', 'coverage', 'openclaw_skill_development_best_practice.md'];
+  // Include only necessary files for the skill package
+  const includeFiles = [
+    'SKILL.md',
+    'README.md',
+    'index.js',
+    'plugin.json',
+    'package.json'
+  ];
   
-  archive.glob('**/*', {
-    cwd: SKILL_ROOT,
-    ignore: ignorePatterns,
-    dot: true
+  const includeDirs = [
+    'scripts',
+    'references'
+  ];
+  
+  // Add specific files
+  includeFiles.forEach(file => {
+    const filePath = path.join(SKILL_ROOT, file);
+    if (fs.existsSync(filePath)) {
+      archive.file(filePath, { name: file });
+    }
   });
+  
+  // Add directories
+  includeDirs.forEach(dir => {
+    const dirPath = path.join(SKILL_ROOT, dir);
+    if (fs.existsSync(dirPath)) {
+      const ignorePatterns = [
+        '*.test.js',
+        '*.log',
+        '.DS_Store',
+        'coverage'
+      ];
+      archive.directory(dirPath, dir, { ignore: ignorePatterns });
+    }
+  });
+  
+  // Include node_modules for runtime dependencies
+  const nodeModulesPath = path.join(SKILL_ROOT, 'node_modules');
+  if (fs.existsSync(nodeModulesPath)) {
+    archive.directory(nodeModulesPath, 'node_modules');
+  }
   
   archive.finalize();
 }
