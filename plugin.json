@@ -1,0 +1,33 @@
+{
+  "name": "booking-com-automation",
+  "version": "1.0.0",
+  "description": "Automate hotel booking on booking.com from search to payment page",
+  "entry": "index.js",
+  "tools": [
+    "browser"
+  ],
+  "requires": [
+    "node"
+  ],
+  "keywords": [
+    "openclaw",
+    "skill",
+    "booking",
+    "hotel",
+    "automation",
+    "travel"
+  ],
+  "author": "stofancy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stofancy/booking-com-automation.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stofancy/booking-com-automation/issues"
+  },
+  "homepage": "https://github.com/stofancy/booking-com-automation#readme",
+  "openclaw": {
+    "compatibility": "openclaw"
+  }
+}
