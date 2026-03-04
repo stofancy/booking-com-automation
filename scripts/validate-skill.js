@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SKILL_ROOT = path.dirname(__dirname);
-const REQUIRED_FILES = ['SKILL.md', 'package.json', 'README.md'];
+const REQUIRED_FILES = ['SKILL.md', 'index.js', 'plugin.json', 'package.json', 'README.md'];
 const REQUIRED_DIRS = ['scripts', 'references', 'tests'];
 
 let errors = [];
