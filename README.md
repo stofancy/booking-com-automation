@@ -84,9 +84,79 @@ booking-com-automation/
 
 See [GitHub Issues](https://github.com/stofancy/booking-com-automation/issues) for completed sprints and roadmap.
 
+## Development Status
+
+### Completed Sprints
+
+| Sprint | Feature | Status |
+|--------|---------|--------|
+| Sprint 1 | Foundation & Infrastructure | ✅ Complete |
+| Sprint 2 | Hotel Search | ✅ Complete |
+| Sprint 3 | Property Selection & Details | ✅ Complete |
+| Sprint 4 | Room Selection | ✅ Complete |
+| Sprint 5 | Guest Details Form | ✅ Complete |
+| Sprint 6 | Payment Page Handoff | ✅ Complete |
+
+### MVP vs Full Booking
+
+- **MVP (Search Only)**: Sprints 1-3 - Search and present hotel options
+- **Full Booking**: Sprints 1-6 - Complete booking to payment page
+
+### Coming Later
+
+- ✈️ Flight search (deferred - hotel booking first)
+- 📦 Package deals (flight + hotel)
+- 🔔 Price alerts
+- 📋 Booking history access
+
+## Troubleshooting
+
+### Common Issues
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| "Not logged in" | No active booking.com session | Log in to booking.com in Chrome |
+| "No results found" | No matches for criteria | Try different dates or relax filters |
+| "Search timeout" | Slow page load | Retry, check internet connection |
+| "Cannot parse results" | booking.com layout changed | Report issue, skill needs update |
+
+### Skill Not Triggering
+
+Ensure the skill description matches your query. Try:
+- "Search hotels..."
+- "Find hotels..."
+- "Book a hotel..."
+
+### Browser Issues
+
+If browser automation fails:
+
+1. Check Chrome extension relay status: `openclaw browser status`
+2. Ensure booking.com tab is attached to relay
+3. Restart browser relay if needed
+
+### Outdated Selectors
+
+booking.com occasionally updates their UI. If searches fail:
+
+1. Check for skill updates: `clawhub update booking-com-automation`
+2. Report issue on GitHub with error details
+3. Check references/booking-selectors.md for known issues
+
+## Contributing
+
+Found a bug or want to contribute? See [CONTRIBUTING.md](CONTRIBUTING.md)
+
 ## License
 
-MIT
+MIT License - See [LICENSE](LICENSE)
+
+## Version History
+
+| Version | Date | Changes |
+|---------|------|---------|
+| 1.0.0 | 2026-03-04 | Production release with full booking flow |
+| 0.1.0 | 2026-03-01 | Initial development |
 
 ## Author
 
