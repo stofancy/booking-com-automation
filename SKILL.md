@@ -229,6 +229,88 @@ booking.com occasionally updates their UI. If searches fail:
 2. Report issue on GitHub with error details
 3. Check references/booking-selectors.md for known issues
 
+## Implementation
+
+This skill provides a complete booking automation flow. OpenClaw Agent can call the `run()` function directly or use the CLI.
+
+### Entry Point
+
+**File**: `index.js`
+
+```javascript
+// As a module
+const { run } = require('./index.js');
+const result = await run({
+  query: "Hotels in Paris, March 15-20, 2 guests",
+  browser: browserContext  // Optional, for full automation
+});
+```
+
+**CLI Usage**:
+```bash
+node index.js "Hotels in Paris, March 15-20, 2 guests"
+node index.js --metadata  # Show available modules
+node index.js --help
+```
+
+### API
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `query` | string | Yes | Natural language search query |
+| `browser` | object | No | Browser context for automation |
+| `context` | object | No | Additional context |
+
+**Returns**:
+```javascript
+{
+  success: true,
+  message: "Query parsed successfully...",
+  data: {
+    parsed: { destination, dates, guests, budget },
+    summary: "📍 paris • 📅 2026-03-15 to 2026-03-20",
+    availableModules: ["search-form", "results-extractor", ...]
+  }
+}
+```
+
+### Available Modules
+
+| Module | File | Description |
+|--------|------|-------------|
+| `searchParser` | `scripts/search-parser.js` | Parse natural language into structured search params |
+| `searchForm` | `scripts/search-form.js` | Fill and submit search form on booking.com |
+| `resultsExtractor` | `scripts/results-extractor.js` | Extract hotel data from search results |
+| `resultsPresenter` | `scripts/results-presenter.js` | Format and present search results |
+| `propertySelector` | `scripts/property-selector.js` | Select property from results |
+| `propertyDetails` | `scripts/property-details.js` | Extract property details |
+| `decisionSupport` | `scripts/decision-support.js` | Analyze and recommend properties |
+| `roomExtractor` | `scripts/room-extractor.js` | Extract room options and rates |
+| `rateComparison` | `scripts/rate-comparison.js` | Compare room rates and values |
+| `roomSelection` | `scripts/room-selection.js` | Select room and proceed |
+| `guestDetails` | `scripts/guest-details.js` | Fill guest information form |
+| `paymentHandoff` | `scripts/payment-handoff.js` | Navigate to payment page |
+
+### Full Booking Flow
+
+```
+query → searchParser → searchForm → resultsExtractor → resultsPresenter
+                                                      ↓
+                                              propertySelector
+                                                      ↓
+                                              propertyDetails
+                                                      ↓
+                                              roomExtractor
+                                                      ↓
+                                              rateComparison
+                                                      ↓
+                                              roomSelection
+                                                      ↓
+                                              guestDetails
+                                                      ↓
+                                              paymentHandoff → User completes payment
+```
+
 ## Contributing
 
 Found a bug or want to contribute? See [CONTRIBUTING.md](https://github.com/stofancy/booking-com-automation/blob/main/CONTRIBUTING.md)
