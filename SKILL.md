@@ -1,28 +1,11 @@
 ---
 name: booking-com-automation
 description: Automate complete hotel booking on booking.com from search to payment page. Use when: (1) searching for hotels, (2) viewing property details, (3) selecting rooms, (4) filling guest details, (5) reaching payment page. NOT for: completing payment (user finishes manually), managing existing reservations, flight search (deferred), or non-booking.com sites.
-metadata:
-  {
-    "openclaw":
-      {
-        "emoji": "✈️",
-        "requires": { "bins": ["node"] },
-        "install":
-          [
-            {
-              "id": "npm",
-              "kind": "npm",
-              "package": "booking-com-automation",
-              "label": "Install booking.com automation skill",
-            },
-          ],
-      },
-  }
 ---
 
 # Booking.com Automation Skill
 
-Automate flight and hotel searches on booking.com using browser automation.
+Automate hotel searches and booking on booking.com using browser automation.
 
 ## When to Use
 
@@ -186,26 +169,28 @@ Common errors and solutions:
 
 ## Development Status
 
-🚧 **Under Active Development**
+✅ **Production Ready** - All 6 sprints complete
 
-**Current Focus**: 🏨 Complete Hotel Booking (Search → Payment)  
-**Current Sprint**: Foundation & Infrastructure (Epic 1)  
-**Next Sprint**: Hotel Search (Epic 2)
+**Completed**: 
+- Sprint 1: Foundation & Infrastructure
+- Sprint 2: Hotel Search
+- Sprint 3: Property Selection & Details
+- Sprint 4: Room Selection
+- Sprint 5: Guest Details Form
+- Sprint 6: Payment Page Handoff
 
-See [GitHub Projects](https://github.com/stofancy/booking-com-automation/projects) for roadmap.
+See [GitHub Issues](https://github.com/stofancy/booking-com-automation/issues) for details.
 
-### Full Booking Flow Roadmap
+### Full Booking Flow Status
 
-| Phase | Epic | Feature | Status |
-|-------|------|---------|--------|
-| 1 | Epic 1 | Foundation & Infrastructure | 🟢 65% |
-| 2 | Epic 2 | Hotel Search | ⚪ Next |
-| 3 | Epic 3 | Browser Automation (Core) | ⚪ |
-| 4 | Epic 4 | Property Selection & Details | ⚪ |
-| 5 | Epic 5 | Room Selection | ⚪ |
-| 6 | Epic 6 | Guest Details Form | ⚪ |
-| 7 | Epic 7 | Payment Page Handoff | ⚪ |
-| 8+ | Epic 9-11 | Polish, Testing, Publishing | ⚪ |
+| Phase | Sprint | Feature | Status |
+|-------|--------|---------|--------|
+| 1 | Sprint 1 | Foundation & Infrastructure | ✅ Complete |
+| 2 | Sprint 2 | Hotel Search | ✅ Complete |
+| 3 | Sprint 3 | Property Selection & Details | ✅ Complete |
+| 4 | Sprint 4 | Room Selection | ✅ Complete |
+| 5 | Sprint 5 | Guest Details Form | ✅ Complete |
+| 6 | Sprint 6 | Payment Page Handoff | ✅ Complete |
 
 ### MVP vs Full Booking
 
@@ -254,7 +239,7 @@ MIT License - See [LICENSE](https://github.com/stofancy/booking-com-automation/b
 
 ---
 
-**Version**: 0.1.0  
-**Last Updated**: 2026-03-01  
+**Version**: 1.0.0  
+**Last Updated**: 2026-03-04  
 **Author**: stofancy  
 **Repository**: https://github.com/stofancy/booking-com-automation
