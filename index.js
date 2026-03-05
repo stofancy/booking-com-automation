@@ -2,149 +2,126 @@
 
 /**
  * Booking.com Automation Skill - Entry Point
- * 
+ *
  * A skill for automating hotel booking on booking.com from search to payment.
- * 
+ * Uses Playwright for browser automation.
+ *
  * Usage:
- *   node index.js "Hotels in Paris, March 15-20, 2 guests"
- *   node index.js --help
- * 
- * Or use as a module:
  *   const { run } = require('./index.js');
- *   const result = await run({ query: "Hotels in Paris" });
+ *   const result = await run({
+ *     destination: 'Paris',
+ *     checkIn: '2026-03-15',
+ *     checkOut: '2026-03-20',
+ *     adults: 2,
+ *     children: 0,
+ *     rooms: 1
+ *   });
  */
 
-const path = require('path');
-
-// Import scripts modules
-const searchParser = require('./scripts/search-parser.js');
+const { chromium } = require('playwright');
 const searchForm = require('./scripts/search-form.js');
-const resultsExtractor = require('./scripts/results-extractor.js');
-const resultsPresenter = require('./scripts/results-presenter.js');
-const propertySelector = require('./scripts/property-selector.js');
-const propertyDetails = require('./scripts/property-details.js');
-const decisionSupport = require('./scripts/decision-support.js');
-const roomExtractor = require('./scripts/room-extractor.js');
-const rateComparison = require('./scripts/rate-comparison.js');
-const roomSelection = require('./scripts/room-selection.js');
-const guestDetails = require('./scripts/guest-details.js');
-const paymentHandoff = require('./scripts/payment-handoff.js');
 
 const MODULE_NAME = 'booking-com-automation';
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 
 /**
  * Main run function - OpenClaw skill entry point
- * @param {Object} params - Parameters from OpenClaw
- * @param {string} params.query - Natural language search query
- * @param {Object} params.browser - Browser context (optional, for browser automation)
- * @param {Object} params.context - Additional context
+ * @param {Object} params - Parameters
+ * @param {string} params.destination - Hotel destination (city name)
+ * @param {string} params.checkIn - Check-in date (YYYY-MM-DD)
+ * @param {string} params.checkOut - Check-out date (YYYY-MM-DD)
+ * @param {number} params.adults - Number of adults (default: 2)
+ * @param {number} params.children - Number of children (default: 0)
+ * @param {number} params.rooms - Number of rooms (default: 1)
+ * @param {Object} params.page - Playwright page object (optional, for external browser)
+ * @param {boolean} params.headless - Run in headless mode (default: true)
  * @returns {Object} Standardized result object
  */
 async function run(params) {
-  const { query, browser, context = {} } = params;
-  
-  // Validate input
-  if (!query) {
+  const {
+    destination,
+    checkIn,
+    checkOut,
+    adults = 2,
+    children = 0,
+    rooms = 1,
+    page: externalPage,
+    headless = true
+  } = params;
+
+  // Validate required parameters
+  if (!destination) {
     return {
       success: false,
-      error: 'Missing required parameter: query',
-      message: 'Please provide a search query'
+      error: 'Missing required parameter: destination',
+      message: 'Please provide a destination city'
     };
   }
-  
+
+  if (!checkIn || !checkOut) {
+    return {
+      success: false,
+      error: 'Missing required parameters: checkIn and checkOut',
+      message: 'Please provide check-in and check-out dates (YYYY-MM-DD format)'
+    };
+  }
+
+  let browser = null;
+  let page = externalPage;
+  let shouldCloseBrowser = false;
+
   try {
-    // Step 1: Parse the search query
-    const parsed = searchParser.parseSearchQuery(query);
-    
-    if (!parsed.valid) {
+    // Build search params
+    const searchParams = {
+      destination,
+      checkIn,
+      checkOut,
+      adults,
+      children,
+      rooms
+    };
+
+    // If no external page provided, launch browser
+    if (!page) {
+      browser = await chromium.launch({ headless });
+      page = await browser.newPage();
+      shouldCloseBrowser = true;
+    }
+
+    // Execute search
+    const searchResult = await searchForm.executeSearch(page, searchParams);
+
+    if (!searchResult.success) {
       return {
         success: false,
-        error: 'Invalid query',
-        message: searchParser.getValidationErrors(parsed).join(', '),
-        data: { parsed, errors: searchParser.getValidationErrors(parsed) }
+        error: 'SearchFailed',
+        message: searchResult.error || 'Failed to execute search',
+        data: searchParams
       };
     }
-    
-    // Step 2: Build search params for further processing
-    const searchParams = {
-      destination: parsed.destination,
-      checkIn: parsed.dates?.checkIn,
-      checkOut: parsed.dates?.checkOut,
-      guests: parsed.guests,
-      budget: parsed.budget,
-      filters: parsed.filters
-    };
-    
-    // If browser context provided, execute full flow
-    if (browser) {
-      return await executeFullFlow(browser, searchParams, context);
-    }
-    
-    // Otherwise, return parsed data for verification
+
+    // Return success with current URL (on search results page)
     return {
       success: true,
-      message: 'Query parsed successfully. Browser context required for full execution.',
+      message: `Search completed: ${destination} (${checkIn} to ${checkOut})`,
       data: {
-        parsed: searchParams,
-        summary: searchParser.formatSearchSummary(parsed),
-        availableModules: [
-          'search-form',
-          'results-extractor', 
-          'property-selector',
-          'property-details',
-          'room-extractor',
-          'rate-comparison',
-          'room-selection',
-          'guest-details',
-          'payment-handoff'
-        ]
+        searchParams,
+        url: page.url(),
+        page
       }
     };
-    
+
   } catch (error) {
     return {
       success: false,
       error: error.name || 'Error',
-      message: error.message,
-      stack: error.stack
-    };
-  }
-}
-
-/**
- * Execute full booking flow with browser
- */
-async function executeFullFlow(browser, searchParams, context) {
-  try {
-    // Execute search
-    const searchResult = await searchForm.executeSearch(browser, searchParams);
-    if (!searchResult.success) {
-      return searchResult;
-    }
-    
-    // Extract results
-    const results = await resultsExtractor.extractResults(browser);
-    
-    // Present results
-    const presentation = resultsPresenter.presentResults(results, searchParams);
-    
-    return {
-      success: true,
-      message: 'Search completed successfully',
-      data: {
-        searchParams,
-        results: presentation,
-        totalFound: results.length
-      }
-    };
-    
-  } catch (error) {
-    return {
-      success: false,
-      error: error.name || 'FlowError',
       message: error.message
     };
+  } finally {
+    // Close browser if we launched it
+    if (shouldCloseBrowser && browser) {
+      await browser.close();
+    }
   }
 }
 
@@ -156,19 +133,19 @@ function getMetadata() {
     name: MODULE_NAME,
     version: VERSION,
     description: 'Automate hotel booking on booking.com from search to payment',
-    modules: {
-      searchParser: Object.keys(searchParser),
-      searchForm: Object.keys(searchForm).filter(k => typeof searchForm[k] === 'function'),
-      resultsExtractor: Object.keys(resultsExtractor).filter(k => typeof resultsExtractor[k] === 'function'),
-      resultsPresenter: Object.keys(resultsPresenter).filter(k => typeof resultsPresenter[k] === 'function'),
-      propertySelector: Object.keys(propertySelector).filter(k => typeof propertySelector[k] === 'function'),
-      propertyDetails: Object.keys(propertyDetails).filter(k => typeof propertyDetails[k] === 'function'),
-      decisionSupport: Object.keys(decisionSupport).filter(k => typeof decisionSupport[k] === 'function'),
-      roomExtractor: Object.keys(roomExtractor).filter(k => typeof roomExtractor[k] === 'function'),
-      rateComparison: Object.keys(rateComparison).filter(k => typeof rateComparison[k] === 'function'),
-      roomSelection: Object.keys(roomSelection).filter(k => typeof roomSelection[k] === 'function'),
-      guestDetails: Object.keys(guestDetails).filter(k => typeof guestDetails[k] === 'function'),
-      paymentHandoff: Object.keys(paymentHandoff).filter(k => typeof paymentHandoff[k] === 'function')
+    parameters: {
+      destination: { type: 'string', required: true, description: 'City or hotel name' },
+      checkIn: { type: 'string', required: true, description: 'Check-in date (YYYY-MM-DD)' },
+      checkOut: { type: 'string', required: true, description: 'Check-out date (YYYY-MM-DD)' },
+      adults: { type: 'number', required: false, default: 2, description: 'Number of adults' },
+      children: { type: 'number', required: false, default: 0, description: 'Number of children' },
+      rooms: { type: 'number', required: false, default: 1, description: 'Number of rooms' },
+      headless: { type: 'boolean', required: false, default: true, description: 'Run browser headless' }
+    },
+    returns: {
+      success: 'boolean',
+      message: 'string',
+      data: 'object with searchParams, url, and page object'
     }
   };
 }
@@ -178,42 +155,59 @@ function getMetadata() {
  */
 function cli() {
   const args = process.argv.slice(2);
-  
+
   if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
     console.log(`
 Booking.com Automation Skill v${VERSION}
 
 Usage:
-  node index.js "<search query>"
+  node index.js --destination "Paris" --checkin 2026-03-15 --checkout 2026-03-20
   node index.js --metadata
-  node index.js --help
-
-Examples:
-  node index.js "Hotels in Paris, March 15-20, 2 guests"
-  node index.js "Find a hotel in Tokyo next weekend"
-  node index.js "Cheap hotels in Barcelona, April 1-5, under $200/night"
 
 As a module:
   const { run } = require('./index.js');
-  const result = await run({ query: "Hotels in Paris" });
+  const result = await run({
+    destination: 'Paris',
+    checkIn: '2026-03-15',
+    checkOut: '2026-03-20',
+    adults: 2
+  });
 `);
     return;
   }
-  
+
   if (args[0] === '--metadata' || args[0] === '-m') {
     console.log(JSON.stringify(getMetadata(), null, 2));
     return;
   }
-  
-  const query = args.join(' ');
-  
-  console.log('Processing query:', query);
+
+  // Parse CLI args
+  const params = {};
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--destination' || args[i] === '-d') {
+      params.destination = args[++i];
+    } else if (args[i] === '--checkin' || args[i] === '-i') {
+      params.checkIn = args[++i];
+    } else if (args[i] === '--checkout' || args[i] === '-o') {
+      params.checkOut = args[++i];
+    } else if (args[i] === '--adults' || args[i] === '-a') {
+      params.adults = parseInt(args[++i], 10);
+    } else if (args[i] === '--children' || args[i] === '-c') {
+      params.children = parseInt(args[++i], 10);
+    } else if (args[i] === '--rooms' || args[i] === '-r') {
+      params.rooms = parseInt(args[++i], 10);
+    } else if (args[i] === '--headless') {
+      params.headless = args[++i] !== 'false';
+    }
+  }
+
+  console.log('Running search with params:', params);
   console.log('='.repeat(60));
-  
-  run({ query }).then(result => {
+
+  run(params).then(result => {
     console.log('\nResult:');
     console.log(JSON.stringify(result, null, 2));
-    
+
     if (!result.success) {
       process.exit(1);
     }
@@ -227,19 +221,7 @@ As a module:
 module.exports = {
   run,
   getMetadata,
-  // Also export individual modules for direct access
-  searchParser,
-  searchForm,
-  resultsExtractor,
-  resultsPresenter,
-  propertySelector,
-  propertyDetails,
-  decisionSupport,
-  roomExtractor,
-  rateComparison,
-  roomSelection,
-  guestDetails,
-  paymentHandoff
+  searchForm
 };
 
 // CLI entry point
