@@ -1,6 +1,6 @@
 ---
 name: booking-com-automation
-description: Automate complete hotel booking on booking.com from search to payment page. Use when: (1) searching for hotels, (2) viewing property details, (3) selecting rooms, (4) filling guest details, (5) reaching payment page. NOT for: completing payment (user finishes manually), managing existing reservations, flight search (deferred), or non-booking.com sites.
+description: Automate complete hotel booking on booking.com from search to payment page.
 ---
 
 # Booking.com Automation Skill
