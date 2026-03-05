@@ -11,50 +11,110 @@
 
 /**
  * Extract all hotel results from search results page
- * @param {Object} browser - Browser automation interface with snapshot() method
+ * @param {Object} page - Playwright page object
  * @param {Object} options - Extraction options
  * @param {number} options.maxResults - Maximum number of results to extract (default: 10)
  * @returns {Promise<Array>} Array of hotel result objects
  */
-async function extractResults(browser, options = {}) {
+async function extractResults(page, options = {}) {
   try {
-    console.log('🔍 Extracting search results...');
+    console.log('Extracting search results...');
 
     const maxResults = options.maxResults || 10;
     const results = [];
 
-    // Get page snapshot with ARIA refs
-    const snapshot = await browser.snapshot({
-      profile: 'chrome',
-      refs: 'aria'
+    // Extract hotel data using Playwright's evaluate
+    const hotelCards = await page.evaluate(() => {
+      const cards = [];
+      // Find property cards - look for hotel links in search results
+      // Hotel links typically have href containing '/hotel/'
+      const links = Array.from(document.querySelectorAll('a'));
+      const hotelLinks = links.filter(a => 
+        a.href && 
+        a.href.includes('/hotel/') && 
+        a.textContent && 
+        a.textContent.trim().length > 10 &&
+        !a.textContent.includes('Genius') &&
+        !a.textContent.includes('Sign in')
+      );
+      
+      hotelLinks.forEach((el, index) => {
+        try {
+          // Extract hotel name
+          const nameEl = el.querySelector('[data-testid="title"]') || el.querySelector('.b9780ed57c a') || el.querySelector('h3');
+          const name = nameEl?.textContent?.trim() || null;
+          
+          if (!name) return;
+          
+          // Extract rating
+          const ratingEl = el.querySelector('[data-testid="review-score"]') || el.querySelector('.b9780ed57c [class*="review"]');
+          const ratingText = ratingEl?.textContent?.trim() || '';
+          const rating = ratingText.match(/(\d+\.?\d*)/)?.[1] || null;
+          
+          // Extract review count
+          const reviewText = ratingEl?.textContent?.trim() || '';
+          const reviews = reviewText.match(/(\d[\d,]*)\s*reviews?/)?.[1] || null;
+          
+          // Extract price
+          const priceEl = el.querySelector('[data-testid="price-and-discounted-price"]') || el.querySelector('.b9780ed57c [class*="price"]');
+          const price = priceEl?.textContent?.trim() || null;
+          
+          // Extract location
+          const locationEl = el.querySelector('[data-testid="location"]') || el.querySelector('.b9780ed57c [class*="location"]');
+          const location = locationEl?.textContent?.trim() || null;
+          
+          // Extract URL
+          const linkEl = el.querySelector('a');
+          const url = linkEl?.href || null;
+          
+          // Check for badges
+          const geniusBadge = el.textContent.includes('Genius');
+          const freeCancel = el.textContent.includes('Free cancellation');
+          const breakfast = el.textContent.includes('Breakfast');
+          
+          cards.push({
+            name,
+            rating,
+            reviews,
+            price,
+            location,
+            url,
+            genius: geniusBadge,
+            freeCancellation: freeCancel,
+            breakfastIncluded: breakfast
+          });
+        } catch (e) {
+          // Skip malformed cards
+        }
+      });
+      
+      return cards;
     });
 
-    if (!snapshot) {
-      throw new Error('Failed to get page snapshot');
-    }
+    console.log(`Found ${hotelCards.length} hotel cards`);
 
-    // Parse hotel cards from snapshot
-    const hotelCards = parseHotelCardsFromSnapshot(snapshot);
-
-    console.log(`📋 Found ${hotelCards.length} hotel cards`);
-
-    // Extract details for each hotel (up to maxResults)
+    // Transform to expected format
     for (let i = 0; i < Math.min(hotelCards.length, maxResults); i++) {
-      try {
-        const hotel = extractHotelData(hotelCards[i], i);
-        if (hotel && hotel.name) {
-          results.push(hotel);
-        }
-      } catch (error) {
-        console.warn(`⚠️  Failed to extract hotel ${i + 1}: ${error.message}`);
-      }
+      const card = hotelCards[i];
+      results.push({
+        index: i + 1,
+        name: card.name,
+        rating: card.rating,
+        reviews: card.reviews ? `${card.reviews} reviews` : null,
+        price: card.price,
+        location: card.location,
+        url: card.url,
+        genius: card.genius,
+        freeCancellation: card.freeCancellation,
+        breakfastIncluded: card.breakfastIncluded
+      });
     }
 
-    console.log(`✅ Extracted ${results.length} hotels`);
+    console.log(`Extracted ${results.length} hotels`);
     return results;
 
   } catch (error) {
-    console.error('❌ Error extracting results:', error.message);
+    console.error('Error extracting results:', error.message);
     throw error;
   }
 }
