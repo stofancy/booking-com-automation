@@ -22,7 +22,6 @@ Thank you for your interest in contributing to the booking-com-automation skill!
 
 ### 4. Testing Requirements
 - **Unit Tests**: All new functions must have unit tests
-- **Integration Tests**: Browser automation flows need integration tests with mock data
 - **Manual Testing**: Test actual booking.com interaction before merging major changes
 
 ## Documentation Updates

@@ -4,7 +4,7 @@
 
 ## Status
 
-✅ **Production Ready** - All 6 sprints complete (360 tests passing)
+✅ **Production Ready** - All 6 sprints complete (204 tests passing)
 
 ## Features
 
@@ -33,7 +33,7 @@ This project is developed using Agile/Kanban methodology:
 - **Project Board**: GitHub Projects (Kanban style)
 - **Issues**: Tracked with epics, user stories, and tasks
 - **CI/CD**: GitHub Actions for testing and packaging
-- **Testing**: Unit tests + integration tests with mock data
+- **Testing**: Unit tests
 
 ### Quick Start
 
@@ -74,8 +74,7 @@ booking-com-automation/
 │   ├── guest-details.js
 │   └── payment-handoff.js
 ├── tests/                   # Test suites
-│   ├── unit/
-│   └── integration/
+│   └── unit/
 ├── .github/workflows/       # CI/CD pipelines
 └── references/              # Documentation (placeholder)
 ```
