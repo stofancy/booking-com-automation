@@ -155,10 +155,165 @@ async function fillDestination(browser, destination) {
 }
 
 /**
+ * Month names for calendar navigation
+ */
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+/**
+ * Parse YYYY-MM-DD format into components
+ * @param {string} dateStr - Date in YYYY-MM-DD format
+ * @returns {Object} { year, month, day } where month is 0-indexed
+ */
+function parseDate(dateStr) {
+  const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    throw new Error(`Invalid date format: ${dateStr}. Expected YYYY-MM-DD`);
+  }
+  return {
+    year: parseInt(match[1], 10),
+    month: parseInt(match[2], 10) - 1, // Convert to 0-indexed
+    day: parseInt(match[3], 10)
+  };
+}
+
+/**
+ * Format date for aria label matching
+ * Format: "We 4 March 2026" (Weekday Day Month Year)
+ * @param {number} year
+ * @param {number} month - 0-indexed
+ * @param {number} day
+ * @returns {string}
+ */
+function formatAriaDate(year, month, day) {
+  const date = new Date(year, month, day);
+  const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const weekday = weekdays[date.getDay()];
+  const monthName = MONTH_NAMES[month];
+  return `${weekday} ${day} ${monthName} ${year}`;
+}
+
+/**
+ * Find the ref for a specific date button in the snapshot
+ * @param {string} snapshot - ARIA snapshot from browser
+ * @param {number} year
+ * @param {number} month - 0-indexed
+ * @param {number} day
+ * @returns {string|null} The ref attribute or null if not found
+ */
+function findDateButtonRef(snapshot, year, month, day) {
+  const ariaDate = formatAriaDate(year, month, day);
+  
+  // Look for gridcell with the date pattern
+  // Format: gridcell "We 4 March 2026"
+  const gridcellPattern = new RegExp(`gridcell "${ariaDate}"[^]*?ref="([^"]+)"`, 'i');
+  const gridcellMatch = snapshot.match(gridcellPattern);
+  
+  if (gridcellMatch) {
+    return gridcellMatch[1];
+  }
+  
+  // Alternative: look for button with the date text inside a gridcell
+  // The button might have its own ref
+  const buttonPattern = new RegExp(`button "${ariaDate}"[^]*?ref="([^"]+)"`, 'i');
+  const buttonMatch = snapshot.match(buttonPattern);
+  
+  if (buttonMatch) {
+    return buttonMatch[1];
+  }
+  
+  return null;
+}
+
+/**
+ * Navigate calendar to target month/year
+ * @param {Object} browser - Browser automation interface
+ * @param {number} targetYear
+ * @param {number} targetMonth - 0-indexed
+ * @returns {Promise<boolean>} Success status
+ */
+async function navigateToMonth(browser, targetYear, targetMonth) {
+  const maxAttempts = 24; // Prevent infinite loops
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    // Get current snapshot
+    const snapshot = await browser.snapshot({
+      profile: 'chrome',
+      refs: 'aria'
+    });
+    
+    // Check if we're at the target month by looking for a date in that month
+    const testDate = formatAriaDate(targetYear, targetMonth, 1);
+    
+    if (snapshot.includes(testDate)) {
+      return true; // Target month is visible
+    }
+    
+    // Click next month button
+    const nextMonthMatch = snapshot.match(/button "Next month"[^]*?ref="([^"]+)"/i);
+    if (!nextMonthMatch) {
+      throw new Error('Could not find "Next month" button in calendar');
+    }
+    
+    await browser.act({
+      profile: 'chrome',
+      request: {
+        kind: 'click',
+        ref: nextMonthMatch[1]
+      }
+    });
+    
+    await sleep(500);
+    attempts++;
+  }
+  
+  throw new Error(`Failed to navigate to ${MONTH_NAMES[targetMonth]} ${targetYear} after ${maxAttempts} attempts`);
+}
+
+/**
+ * Select a specific date in the calendar
+ * @param {Object} browser - Browser automation interface
+ * @param {number} year
+ * @param {number} month - 0-indexed
+ * @param {number} day
+ * @returns {Promise<boolean>} Success status
+ */
+async function selectDate(browser, year, month, day) {
+  const snapshot = await browser.snapshot({
+    profile: 'chrome',
+    refs: 'aria'
+  });
+  
+  const ref = findDateButtonRef(snapshot, year, month, day);
+  
+  if (!ref) {
+    throw new Error(`Could not find date button for ${formatAriaDate(year, month, day)}`);
+  }
+  
+  await browser.act({
+    profile: 'chrome',
+    request: {
+      kind: 'click',
+      ref: ref
+    }
+  });
+  
+  await sleep(500);
+  return true;
+}
+
+/**
  * Fill check-in and check-out dates
  */
 async function fillDates(browser, checkIn, checkOut) {
   try {
+    // Parse input dates
+    const checkInDate = parseDate(checkIn);
+    const checkOutDate = parseDate(checkOut);
+    
     // Click date field to open calendar
     await browser.act({
       profile: 'chrome',
@@ -170,11 +325,32 @@ async function fillDates(browser, checkIn, checkOut) {
     
     await sleep(500);
     
-    // TODO: Implement calendar date selection
-    // This requires navigating the calendar UI
-    // For now, we'll use a simplified approach
+    // Wait for calendar to appear
+    let snapshot = await browser.snapshot({
+      profile: 'chrome',
+      refs: 'aria'
+    });
     
-    console.log('  ⚠️  Calendar date selection needs implementation');
+    // Verify calendar is open
+    if (!snapshot.includes('Calendar') && !snapshot.includes('calendar')) {
+      throw new Error('Calendar did not open after clicking date field');
+    }
+    
+    // Navigate to and select check-in date
+    console.log(`  📅 Selecting check-in: ${checkIn}`);
+    await navigateToMonth(browser, checkInDate.year, checkInDate.month);
+    await selectDate(browser, checkInDate.year, checkInDate.month, checkInDate.day);
+    
+    // Navigate to and select check-out date
+    console.log(`  📅 Selecting check-out: ${checkOut}`);
+    await navigateToMonth(browser, checkOutDate.year, checkOutDate.month);
+    await selectDate(browser, checkOutDate.year, checkOutDate.month, checkOutDate.day);
+    
+    // Calendar should close automatically after selecting both dates
+    // But let's wait a moment to ensure the selection is registered
+    await sleep(500);
+    
+    console.log('  ✅ Dates selected successfully');
     
   } catch (error) {
     throw new Error(`Failed to fill dates: ${error.message}`);

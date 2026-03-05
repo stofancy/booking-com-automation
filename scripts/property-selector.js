@@ -3,6 +3,7 @@
 /**
  * Property Selector for booking.com
  * Handles selecting a property from search results and navigating to details page
+ * Uses ARIA ref-based approach for reliable element interaction
  * 
  * Usage:
  *   const { selectProperty, navigateToPropertyDetails } = require('./property-selector.js');
@@ -31,7 +32,7 @@ async function selectProperty(browser, results, index = 1) {
     
     const selectedHotel = results[index - 1];
     
-    // Click on property
+    // Click on property using ARIA ref approach
     console.log(`  📍 Clicking on: ${selectedHotel.name || `Property ${index}`}`);
     await clickOnProperty(browser, index);
     
@@ -65,36 +66,126 @@ async function selectProperty(browser, results, index = 1) {
 }
 
 /**
- * Click on a property from search results
+ * Click on a property from search results using ARIA refs
+ * Follows the pattern from results-extractor.js:
+ * - Find listitem "Property" elements
+ * - Get the link inside each property card
+ * - Click using ARIA ref
  */
 async function clickOnProperty(browser, index) {
   try {
-    // Get snapshot to find property card
+    // Get snapshot with ARIA refs
     const snapshot = await browser.snapshot({
       profile: 'chrome',
       refs: 'aria'
     });
     
-    // Find property card and click
-    // This is a simplified implementation
-    // In production, would use proper selectors
+    if (!snapshot || !snapshot.elements) {
+      throw new Error('Failed to get page snapshot');
+    }
     
-    console.log('  🔍 Finding property card...');
+    console.log('  🔍 Finding property card using ARIA...');
     
-    // Click on first property's link/button
+    // Find all property listitems
+    const propertyCards = findPropertyCards(snapshot.elements);
+    
+    if (propertyCards.length === 0) {
+      throw new Error('No property cards found on page');
+    }
+    
+    if (index > propertyCards.length) {
+      throw new Error(`Property index ${index} not found (only ${propertyCards.length} properties)`);
+    }
+    
+    // Get the target property card (0-indexed)
+    const targetCard = propertyCards[index - 1];
+    
+    if (!targetCard || !targetCard.ref) {
+      throw new Error(`Property card ${index} does not have a clickable ref`);
+    }
+    
+    console.log(`  🎯 Clicking property ${index} (ref: ${targetCard.ref})`);
+    
+    // Click using ARIA ref
     await browser.act({
       profile: 'chrome',
       request: {
         kind: 'click',
-        selector: `[data-testid="property-card"]:nth-child(${index})`
+        ref: targetCard.ref
       }
     });
+    
+    // Wait for navigation
+    await sleep(1000);
     
     console.log('  ✅ Property clicked');
     
   } catch (error) {
     throw new Error(`Failed to click property: ${error.message}`);
   }
+}
+
+/**
+ * Find all property cards from snapshot elements
+ * Property cards are typically listitem elements with role "Property" or containing property info
+ * @param {Array} elements - Snapshot elements array
+ * @returns {Array} Array of property card objects with ref
+ */
+function findPropertyCards(elements) {
+  const cards = [];
+  
+  // First, try to find listitem with role containing "Property"
+  for (const element of elements) {
+    if (element.role === 'listitem' && element.name && element.name.includes('Property')) {
+      // Find the link inside this listitem
+      const link = findLinkInElement(element);
+      if (link) {
+        cards.push({
+          name: element.name,
+          ref: link.ref,
+          url: link.url
+        });
+      }
+    }
+    
+    // Also check for generic containers that might contain property info
+    if (element.role === 'group' || element.role === 'article') {
+      const groupCards = findPropertyCards(element.children || []);
+      cards.push(...groupCards);
+    }
+    
+    // Recurse into children
+    if (element.children) {
+      const childCards = findPropertyCards(element.children);
+      cards.push(...childCards);
+    }
+  }
+  
+  return cards;
+}
+
+/**
+ * Find a link element within an element tree
+ * @param {Object} element - Parent element to search within
+ * @returns {Object|null} Link element with ref or null
+ */
+function findLinkInElement(element) {
+  if (!element) return null;
+  
+  // Direct link
+  if (element.role === 'link' && element.ref) {
+    return element;
+  }
+  
+  // Check children
+  if (element.children) {
+    for (const child of element.children) {
+      const found = findLinkInElement(child);
+      if (found) return found;
+    }
+  }
+  
+  return null;
 }
 
 /**

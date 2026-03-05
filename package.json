@@ -1,6 +1,6 @@
 {
   "name": "booking-com-automation",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "OpenClaw skill for automating booking.com hotel searches",
   "main": "index.js",
   "scripts": {

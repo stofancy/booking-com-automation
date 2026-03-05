@@ -179,6 +179,98 @@ function extractPaymentMethods(snapshot) {
 }
 
 /**
+ * Select a payment method
+ * @param {Object} browser - Browser automation interface
+ * @param {string} method - Payment method to select
+ * @returns {Promise<Object>} Result
+ */
+async function selectPaymentMethod(browser, method) {
+  try {
+    console.log(`💳 Selecting payment method: ${method}`);
+    
+    const snapshot = await browser.snapshot({
+      profile: 'chrome',
+      refs: 'aria'
+    });
+    
+    if (!snapshot || !snapshot.elements) {
+      throw new Error('Failed to get page snapshot');
+    }
+    
+    // Find the payment method option
+    const methodOption = findPaymentMethodOption(snapshot.elements, method);
+    
+    if (!methodOption || !methodOption.ref) {
+      console.warn(`  ⚠️  Payment method "${method}" not found, using default`);
+      return {
+        success: false,
+        error: `Payment method "${method}" not available`,
+        timestamp: new Date().toISOString()
+      };
+    }
+    
+    console.log(`  🎯 Clicking payment method (ref: ${methodOption.ref})`);
+    
+    await browser.act({
+      profile: 'chrome',
+      request: {
+        kind: 'click',
+        ref: methodOption.ref
+      }
+    });
+    
+    await sleep(500);
+    
+    return {
+      success: true,
+      method: method,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('❌ Error selecting payment method:', error.message);
+    return {
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+/**
+ * Find payment method option from elements
+ * @param {Array} elements - Snapshot elements
+ * @param {string} method - Payment method name
+ * @returns {Object|null} Payment option element
+ */
+function findPaymentMethodOption(elements, method) {
+  for (const element of elements) {
+    // Look for radio button or checkbox with payment method name
+    if (element.role === 'radio' || element.role === 'checkbox' || element.role === 'button') {
+      const name = element.name || '';
+      if (name.toLowerCase().includes(method.toLowerCase())) {
+        return element;
+      }
+    }
+    
+    // Also check group elements
+    if (element.role === 'group' || element.role === 'radiogroup') {
+      const groupName = element.name || '';
+      if (groupName.toLowerCase().includes('payment')) {
+        const found = findPaymentMethodOption(element.children || [], method);
+        if (found) return found;
+      }
+    }
+    
+    if (element.children) {
+      const found = findPaymentMethodOption(element.children, method);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
  * Capture payment page summary for user
  */
 function capturePaymentSummary(paymentInfo) {
@@ -408,7 +500,8 @@ module.exports = {
   formatConfirmation,
   extractBookingSummary,
   extractTotalPrice,
-  extractPaymentMethods
+  extractPaymentMethods,
+  selectPaymentMethod
 };
 
 // CLI mode for testing

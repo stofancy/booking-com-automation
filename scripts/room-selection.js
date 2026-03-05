@@ -74,29 +74,253 @@ async function selectRoomAndReserve(browser, rooms, roomIndex) {
 }
 
 /**
- * Click the "I'll reserve" button for a room
+ * Click the "I'll reserve" button for a room using ARIA refs
+ * Pattern: Find table "Select a room type...", then find Reserve button
  */
 async function clickReserveButton(browser, roomIndex) {
   try {
-    // Get snapshot to find the reserve button
+    // Get snapshot with ARIA refs
     const snapshot = await browser.snapshot({
       profile: 'chrome',
       refs: 'aria'
     });
     
-    // Look for reserve button for specific room
-    // This would use actual booking.com selectors
+    if (!snapshot || !snapshot.elements) {
+      throw new Error('Failed to get page snapshot');
+    }
+    
+    console.log(`  🔍 Finding room ${roomIndex} reserve button...`);
+    
+    // Find the room selection table
+    const roomTable = findRoomSelectionTable(snapshot.elements);
+    
+    if (!roomTable) {
+      throw new Error('Room selection table not found');
+    }
+    
+    // Find the specific room row and its reserve button
+    const reserveButton = findReserveButtonInTable(roomTable, roomIndex);
+    
+    if (!reserveButton || !reserveButton.ref) {
+      throw new Error(`Reserve button for room ${roomIndex} not found`);
+    }
+    
+    console.log(`  🎯 Clicking Reserve (ref: ${reserveButton.ref})`);
+    
+    // Click using ARIA ref
     await browser.act({
       profile: 'chrome',
       request: {
         kind: 'click',
-        selector: `[data-testid="reserve-button"]:nth-child(${roomIndex})`
+        ref: reserveButton.ref
       }
     });
+    
+    // Wait for navigation
+    await sleep(1000);
     
   } catch (error) {
     throw new Error(`Failed to click reserve button: ${error.message}`);
   }
+}
+
+/**
+ * Find the room selection table from snapshot elements
+ * @param {Array} elements - Snapshot elements
+ * @returns {Object|null} Room table element
+ */
+function findRoomSelectionTable(elements) {
+  for (const element of elements) {
+    // Look for table with room selection
+    if (element.role === 'table') {
+      const name = element.name || '';
+      if (name.includes('Select a room') || name.includes('room type') || name.includes('Room')) {
+        return element;
+      }
+    }
+    
+    // Check children
+    if (element.children) {
+      const found = findRoomSelectionTable(element.children);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * Find reserve button for specific room in the table
+ * @param {Object} tableElement - Room selection table
+ * @param {number} roomIndex - 1-based room index
+ * @returns {Object|null} Reserve button element
+ */
+function findReserveButtonInTable(tableElement, roomIndex) {
+  if (!tableElement || !tableElement.children) return null;
+  
+  // Get the row at the specified index
+  const rows = tableElement.children.filter(c => c.role === 'row' || c.role === 'rowgroup');
+  
+  // Handle both flat row structure and nested rowgroup
+  let targetRow = null;
+  let rowArray = [];
+  
+  if (rows.length > 0 && rows[0].role === 'rowgroup') {
+    // Rows are nested in rowgroup
+    for (const rowgroup of rows) {
+      if (rowgroup.children) {
+        rowArray.push(...rowgroup.children.filter(c => c.role === 'row'));
+      }
+    }
+  } else {
+    // Direct rows
+    rowArray = rows;
+  }
+  
+  // Get target row (1-indexed to 0-indexed)
+  const targetRowIndex = roomIndex - 1;
+  
+  if (targetRowIndex < 0 || targetRowIndex >= rowArray.length) {
+    // Fallback: search all rows for button
+    return findButtonInRows(rowArray, 'Reserve');
+  }
+  
+  targetRow = rowArray[targetRowIndex];
+  
+  // Find button in the target row
+  return findButtonInElement(targetRow, 'Reserve');
+}
+
+/**
+ * Find a button with specific text in an element
+ * @param {Object} element - Element to search
+ * @param {string} buttonText - Button text to find
+ * @returns {Object|null} Button element
+ */
+function findButtonInElement(element, buttonText) {
+  if (!element) return null;
+  
+  // Check if this element is the button
+  if (element.role === 'button') {
+    const name = element.name || '';
+    if (name.includes(buttonText)) {
+      return element;
+    }
+  }
+  
+  // Check children
+  if (element.children) {
+    for (const child of element.children) {
+      const found = findButtonInElement(child, buttonText);
+      if (found) return found;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Find button in array of rows
+ * @param {Array} rows - Array of row elements
+ * @param {string} buttonText - Button text to find
+ * @returns {Object|null} Button element
+ */
+function findButtonInRows(rows, buttonText) {
+  for (const row of rows) {
+    const button = findButtonInElement(row, buttonText);
+    if (button) return button;
+  }
+  return null;
+}
+
+/**
+ * Select number of rooms using combobox
+ * @param {Object} browser - Browser automation interface
+ * @param {number} numRooms - Number of rooms to select
+ * @returns {Promise<boolean>} Success status
+ */
+async function selectNumberOfRooms(browser, numRooms) {
+  try {
+    const snapshot = await browser.snapshot({
+      profile: 'chrome',
+      refs: 'aria'
+    });
+    
+    if (!snapshot || !snapshot.elements) {
+      throw new Error('Failed to get page snapshot');
+    }
+    
+    // Find combobox "Select Rooms"
+    const roomsCombobox = findCombobox(snapshot.elements, 'Select Rooms');
+    
+    if (!roomsCombobox || !roomsCombobox.ref) {
+      console.warn('  ⚠️  Room selection combobox not found');
+      return false;
+    }
+    
+    console.log(`  🎯 Selecting ${numRooms} room(s) (ref: ${roomsCombobox.ref})`);
+    
+    // Click to open dropdown
+    await browser.act({
+      profile: 'chrome',
+      request: {
+        kind: 'click',
+        ref: roomsCombobox.ref
+      }
+    });
+    
+    await sleep(500);
+    
+    // Type the number
+    await browser.act({
+      profile: 'chrome',
+      request: {
+        kind: 'type',
+        ref: roomsCombobox.ref,
+        text: numRooms.toString()
+      }
+    });
+    
+    await sleep(300);
+    
+    // Press Enter to confirm
+    await browser.act({
+      profile: 'chrome',
+      request: {
+        kind: 'press',
+        key: 'Enter'
+      }
+    });
+    
+    await sleep(500);
+    
+    return true;
+  } catch (error) {
+    console.error('  ❌ Failed to select rooms:', error.message);
+    return false;
+  }
+}
+
+/**
+ * Find a combobox by its label/name
+ * @param {Array} elements - Snapshot elements
+ * @param {string} name - Combobox name to find
+ * @returns {Object|null} Combobox element
+ */
+function findCombobox(elements, name) {
+  for (const element of elements) {
+    if (element.role === 'combobox') {
+      const elementName = element.name || '';
+      if (elementName.includes(name)) {
+        return element;
+      }
+    }
+    
+    if (element.children) {
+      const found = findCombobox(element.children, name);
+      if (found) return found;
+    }
+  }
+  return null;
 }
 
 /**
@@ -287,6 +511,7 @@ module.exports = {
   handleSoldOutRoom,
   handlePriceChange,
   verifyGuestDetailsPage,
+  selectNumberOfRooms,
   sleep
 };
 

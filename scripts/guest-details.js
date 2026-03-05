@@ -3,11 +3,13 @@
 /**
  * Guest Details Extractor and Form Filler for booking.com
  * Extracts guest details form fields and fills them automatically
+ * Uses ARIA ref-based approach for reliable element interaction
  * 
  * Usage:
- *   const { extractGuestForm, fillGuestDetails } = require('./guest-details.js');
+ *   const { extractGuestForm, fillGuestDetails, proceedToPayment } = require('./guest-details.js');
  *   const form = await extractGuestForm(browser);
  *   await fillGuestDetails(browser, guestData);
+ *   await proceedToPayment(browser);
  */
 
 /**
@@ -382,6 +384,116 @@ function isValidEmail(email) {
 }
 
 /**
+ * Proceed from guest details to payment page
+ * Click the "Continue to Booking" or "Next" button
+ * @param {Object} browser - Browser automation interface
+ * @returns {Promise<Object>} Result
+ */
+async function proceedToPayment(browser) {
+  try {
+    console.log('➡️  Proceeding to payment...');
+    
+    const snapshot = await browser.snapshot({
+      profile: 'chrome',
+      refs: 'aria'
+    });
+    
+    if (!snapshot || !snapshot.elements) {
+      throw new Error('Failed to get page snapshot');
+    }
+    
+    // Find the continue/next button
+    const continueButton = findContinueButton(snapshot.elements);
+    
+    if (!continueButton || !continueButton.ref) {
+      throw new Error('Continue/Next button not found');
+    }
+    
+    console.log(`  🎯 Clicking continue button (ref: ${continueButton.ref})`);
+    
+    await browser.act({
+      profile: 'chrome',
+      request: {
+        kind: 'click',
+        ref: continueButton.ref
+      }
+    });
+    
+    // Wait for payment page to load
+    await sleep(1500);
+    
+    // Verify we're on payment page
+    const newSnapshot = await browser.snapshot({
+      profile: 'chrome',
+      refs: 'aria'
+    });
+    
+    const onPaymentPage = newSnapshot && (
+      newSnapshot.includes('Payment') ||
+      newSnapshot.includes('payment details') ||
+      newSnapshot.includes('Credit card') ||
+      newSnapshot.includes('Complete booking')
+    );
+    
+    if (!onPaymentPage) {
+      console.warn('  ⚠️  May not be on payment page yet');
+    }
+    
+    console.log('✅ Proceeded to payment page');
+    
+    return {
+      success: true,
+      onPaymentPage: onPaymentPage,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error('❌ Error proceeding to payment:', error.message);
+    return {
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+/**
+ * Find the continue/next button from elements
+ * @param {Array} elements - Snapshot elements
+ * @returns {Object|null} Button element
+ */
+function findContinueButton(elements) {
+  // Button texts that typically mean "continue" or "next step"
+  const buttonTexts = [
+    'Continue to Booking',
+    'Continue',
+    'Next',
+    'Next step',
+    'Book now',
+    'Complete booking',
+    'Proceed to payment'
+  ];
+  
+  for (const element of elements) {
+    if (element.role === 'button') {
+      const name = element.name || '';
+      for (const btnText of buttonTexts) {
+        if (name.includes(btnText)) {
+          return element;
+        }
+      }
+    }
+    
+    if (element.children) {
+      const found = findContinueButton(element.children);
+      if (found) return found;
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Sleep helper
  */
 function sleep(ms) {
@@ -417,7 +529,9 @@ module.exports = {
   validateGuestData,
   isValidEmail,
   saveGuestProfile,
-  loadGuestProfile
+  loadGuestProfile,
+  proceedToPayment,
+  extractFieldRef
 };
 
 // CLI mode for testing
