@@ -227,8 +227,8 @@ function formatRoomOptions(rooms, options = {}) {
     }
 
     if (room.rates && room.rates.length > 0) {
-      const lowestRate = room.rates.reduce((min, rate =>
-        rate.perNight < min.perNight ? rate : min), room.rates[0]);
+      const lowestRate = room.rates.reduce((min, rate) =>
+        rate.perNight < min.perNight ? rate : min, room.rates[0]);
 
       lines.push(`   $${lowestRate.perNight}/night`);
 

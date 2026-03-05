@@ -135,8 +135,8 @@ describe('Guest Details Module', () => {
     });
   });
   
-  describe('extractFormFields', () => {
-    it('should extract required fields from snapshot', () => {
+  describe('Guest Form Fields', () => {
+    it('should detect required fields from mock data', () => {
       const mockSnapshot = `
         combobox "First name" [ref=e100]
         combobox "Last name" [ref=e101]
@@ -145,25 +145,25 @@ describe('Guest Details Module', () => {
         combobox "Country of residence" [ref=e104]
         textbox "Special requests" [ref=e105]
       `;
-      
-      // Note: extractFormFields is internal, testing via extractGuestForm structure
+
+      // Test field detection via string matching (mock test)
       const hasFirstName = mockSnapshot.includes('First name');
       const hasLastName = mockSnapshot.includes('Last name');
       const hasEmail = mockSnapshot.includes('Email');
       const hasPhone = mockSnapshot.includes('Phone');
       const hasCountry = mockSnapshot.includes('Country');
-      
+
       assert.ok(hasFirstName, 'Should have first name field');
       assert.ok(hasLastName, 'Should have last name field');
       assert.ok(hasEmail, 'Should have email field');
       assert.ok(hasPhone, 'Should have phone field');
       assert.ok(hasCountry, 'Should have country field');
     });
-    
+
     it('should identify required vs optional fields', () => {
       const requiredFields = ['First name', 'Last name', 'Email', 'Phone', 'Country'];
       const optionalFields = ['Special requests'];
-      
+
       assert.strictEqual(requiredFields.length, 5, 'Should have 5 required fields');
       assert.strictEqual(optionalFields.length, 1, 'Should have 1 optional field');
     });
