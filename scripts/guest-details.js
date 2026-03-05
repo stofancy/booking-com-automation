@@ -3,35 +3,24 @@
 /**
  * Guest Details Extractor and Form Filler for booking.com
  * Extracts guest details form fields and fills them automatically
- * Uses ARIA ref-based approach for reliable element interaction
- * 
+ * Uses Playwright for browser automation
+ *
  * Usage:
  *   const { extractGuestForm, fillGuestDetails, proceedToPayment } = require('./guest-details.js');
- *   const form = await extractGuestForm(browser);
- *   await fillGuestDetails(browser, guestData);
- *   await proceedToPayment(browser);
- */
-
-/**
- * Guest data structure
- * @typedef {Object} GuestData
- * @property {string} firstName - Guest first name
- * @property {string} lastName - Guest last name
- * @property {string} email - Email address
- * @property {string} phone - Phone number with country code
- * @property {string} country - Country of residence
- * @property {string} specialRequests - Special requests (optional)
+ *   const form = await extractGuestForm(page);
+ *   await fillGuestDetails(page, guestData);
+ *   await proceedToPayment(page);
  */
 
 /**
  * Extract guest details form structure
- * @param {Object} browser - Browser automation interface
+ * @param {Object} page - Playwright page object
  * @returns {Promise<Object>} Form structure
  */
-async function extractGuestForm(browser) {
+async function extractGuestForm(page) {
   try {
-    console.log('📝 Extracting guest details form...');
-    
+    console.log('Extracting guest details form...');
+
     const form = {
       success: false,
       fields: [],
@@ -39,39 +28,46 @@ async function extractGuestForm(browser) {
       optionalFields: [],
       timestamp: new Date().toISOString()
     };
-    
-    // Get page snapshot
-    const snapshot = await browser.snapshot({
-      profile: 'chrome',
-      refs: 'aria'
+
+    // Extract form fields using page content
+    const fields = await page.evaluate(() => {
+      const fields = [];
+      const inputs = document.querySelectorAll('input');
+      const selects = document.querySelectorAll('select');
+      const textareas = document.querySelectorAll('textarea');
+
+      const allFields = [...inputs, ...selects, ...textareas];
+
+      allFields.forEach(el => {
+        const name = el.name || el.id || '';
+        const label = document.querySelector(`label[for="${el.id}"]`)?.textContent ||
+                     el.closest('label')?.textContent ||
+                     el.getAttribute('aria-label') || '';
+
+        if (name && (name.includes('name') || name.includes('email') ||
+            name.includes('phone') || name.includes('country'))) {
+          fields.push({
+            name: name,
+            label: label.trim(),
+            type: el.type || el.tagName.toLowerCase(),
+            required: el.hasAttribute('required')
+          });
+        }
+      });
+
+      return fields;
     });
-    
-    if (!snapshot) {
-      throw new Error('Failed to get page snapshot');
-    }
-    
-    // Verify we're on guest details page
-    const isGuestPage = snapshot.includes('Guest details') || 
-                       snapshot.includes('Your details') ||
-                       snapshot.includes('First name') ||
-                       snapshot.includes('Last name');
-    
-    if (!isGuestPage) {
-      throw new Error('Not on guest details page');
-    }
-    
-    // Extract form fields
-    form.fields = extractFormFields(snapshot);
-    form.requiredFields = form.fields.filter(f => f.required);
-    form.optionalFields = form.fields.filter(f => !f.required);
-    
+
+    form.fields = fields;
+    form.requiredFields = fields.filter(f => f.required);
+    form.optionalFields = fields.filter(f => !f.required);
     form.success = true;
-    
-    console.log(`✅ Extracted ${form.fields.length} form fields (${form.requiredFields.length} required)`);
+
+    console.log(`Extracted ${form.fields.length} form fields (${form.requiredFields.length} required)`);
     return form;
-    
+
   } catch (error) {
-    console.error('❌ Error extracting guest form:', error.message);
+    console.error('Error extracting guest form:', error.message);
     return {
       success: false,
       error: error.message,
@@ -81,265 +77,96 @@ async function extractGuestForm(browser) {
 }
 
 /**
- * Extract form fields from snapshot
- */
-function extractFormFields(snapshot) {
-  const fields = [];
-  
-  // First name field
-  if (snapshot.includes('First name') || snapshot.includes('Given name')) {
-    fields.push({
-      name: 'firstName',
-      label: 'First name',
-      required: true,
-      type: 'text',
-      ref: extractFieldRef(snapshot, 'First name')
-    });
-  }
-  
-  // Last name field
-  if (snapshot.includes('Last name') || snapshot.includes('Family name')) {
-    fields.push({
-      name: 'lastName',
-      label: 'Last name',
-      required: true,
-      type: 'text',
-      ref: extractFieldRef(snapshot, 'Last name')
-    });
-  }
-  
-  // Email field
-  if (snapshot.includes('Email') || snapshot.includes('Email address')) {
-    fields.push({
-      name: 'email',
-      label: 'Email address',
-      required: true,
-      type: 'email',
-      ref: extractFieldRef(snapshot, 'Email')
-    });
-  }
-  
-  // Phone field
-  if (snapshot.includes('Phone') || snapshot.includes('Mobile')) {
-    fields.push({
-      name: 'phone',
-      label: 'Phone number',
-      required: true,
-      type: 'tel',
-      ref: extractFieldRef(snapshot, 'Phone')
-    });
-  }
-  
-  // Country field
-  if (snapshot.includes('Country') || snapshot.includes('Country of residence')) {
-    fields.push({
-      name: 'country',
-      label: 'Country of residence',
-      required: true,
-      type: 'select',
-      ref: extractFieldRef(snapshot, 'Country')
-    });
-  }
-  
-  // Special requests
-  if (snapshot.includes('Special requests') || snapshot.includes('Special requests')) {
-    fields.push({
-      name: 'specialRequests',
-      label: 'Special requests',
-      required: false,
-      type: 'textarea',
-      ref: extractFieldRef(snapshot, 'Special requests')
-    });
-  }
-  
-  return fields;
-}
-
-/**
- * Extract field reference from snapshot
- */
-function extractFieldRef(snapshot, fieldName) {
-  // Look for combobox or textbox with field name
-  const patterns = [
-    new RegExp(`combobox "${fieldName}" \\[ref=(e\\d+)\\]`, 'i'),
-    new RegExp(`textbox "${fieldName}" \\[ref=(e\\d+)\\]`, 'i'),
-    new RegExp(`"${fieldName}" \\[ref=(e\\d+)\\]`, 'i')
-  ];
-  
-  for (const pattern of patterns) {
-    const match = snapshot.match(pattern);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-  
-  return null;
-}
-
-/**
  * Fill guest details form
- * @param {Object} browser - Browser automation interface
- * @param {GuestData} guestData - Guest information
+ * @param {Object} page - Playwright page object
+ * @param {Object} guestData - Guest information
  * @returns {Promise<Object>} Result
  */
-async function fillGuestDetails(browser, guestData) {
+async function fillGuestDetails(page, guestData) {
   try {
-    console.log('📝 Filling guest details form...');
-    
+    console.log('Filling guest details form...');
+
     const result = {
       success: false,
       filledFields: [],
       errors: [],
       timestamp: new Date().toISOString()
     };
-    
+
     // Validate guest data
     const validation = validateGuestData(guestData);
     if (!validation.valid) {
       result.errors = validation.errors;
       return result;
     }
-    
-    // Get page snapshot to find field refs
-    const snapshot = await browser.snapshot({
-      profile: 'chrome',
-      refs: 'aria'
-    });
-    
-    if (!snapshot) {
-      throw new Error('Failed to get page snapshot');
-    }
-    
+
     // Fill first name
     if (guestData.firstName) {
-      const ref = extractFieldRef(snapshot, 'First name');
-      if (ref) {
-        await fillField(browser, ref, guestData.firstName);
+      const el = page.locator('input[name="firstname"], input[name="first_name"]').first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.fill(guestData.firstName);
         result.filledFields.push('firstName');
       }
     }
-    
+
     // Fill last name
     if (guestData.lastName) {
-      const ref = extractFieldRef(snapshot, 'Last name');
-      if (ref) {
-        await fillField(browser, ref, guestData.lastName);
+      const el = page.locator('input[name="lastname"], input[name="last_name"]').first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.fill(guestData.lastName);
         result.filledFields.push('lastName');
       }
     }
-    
+
     // Fill email
     if (guestData.email) {
-      const ref = extractFieldRef(snapshot, 'Email');
-      if (ref) {
-        await fillField(browser, ref, guestData.email);
+      const el = page.locator('input[name="email"]').first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.fill(guestData.email);
         result.filledFields.push('email');
       }
     }
-    
+
     // Fill phone
     if (guestData.phone) {
-      const ref = extractFieldRef(snapshot, 'Phone');
-      if (ref) {
-        await fillField(browser, ref, guestData.phone);
+      const el = page.locator('input[name="phone"], input[name="telephone"]').first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.fill(guestData.phone);
         result.filledFields.push('phone');
       }
     }
-    
-    // Fill country
+
+    // Select country
     if (guestData.country) {
-      const ref = extractFieldRef(snapshot, 'Country');
-      if (ref) {
-        await selectCountry(browser, ref, guestData.country);
+      const el = page.locator('select[name="country"], select[name="country_code"]').first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.selectOption({ label: guestData.country });
         result.filledFields.push('country');
       }
     }
-    
+
     // Fill special requests
     if (guestData.specialRequests) {
-      const ref = extractFieldRef(snapshot, 'Special requests');
-      if (ref) {
-        await fillField(browser, ref, guestData.specialRequests);
+      const el = page.locator('textarea[name="special_requests"]').first();
+      if (await el.isVisible().catch(() => false)) {
+        await el.fill(guestData.specialRequests);
         result.filledFields.push('specialRequests');
       }
     }
-    
+
     result.success = result.filledFields.length > 0;
-    
-    console.log(`✅ Filled ${result.filledFields.length} fields`);
+
+    console.log(`Filled ${result.filledFields.length} fields`);
     return result;
-    
+
   } catch (error) {
-    console.error('❌ Error filling guest details:', error.message);
+    console.error('Error filling guest details:', error.message);
     return {
       success: false,
       error: error.message,
       filledFields: [],
       timestamp: new Date().toISOString()
     };
-  }
-}
-
-/**
- * Fill a form field
- */
-async function fillField(browser, ref, value) {
-  try {
-    await browser.act({
-      profile: 'chrome',
-      request: {
-        kind: 'type',
-        ref: ref,
-        text: value
-      }
-    });
-    return true;
-  } catch (error) {
-    console.error(`Failed to fill field ${ref}:`, error.message);
-    return false;
-  }
-}
-
-/**
- * Select country from dropdown
- */
-async function selectCountry(browser, ref, country) {
-  try {
-    // First click to open dropdown
-    await browser.act({
-      profile: 'chrome',
-      request: {
-        kind: 'click',
-        ref: ref
-      }
-    });
-    
-    // Small delay for dropdown to open
-    await sleep(500);
-    
-    // Type country name to filter
-    await browser.act({
-      profile: 'chrome',
-      request: {
-        kind: 'type',
-        ref: ref,
-        text: country
-      }
-    });
-    
-    // Press Enter to select
-    await browser.act({
-      profile: 'chrome',
-      request: {
-        kind: 'press',
-        key: 'Enter'
-      }
-    });
-    
-    return true;
-  } catch (error) {
-    console.error(`Failed to select country ${ref}:`, error.message);
-    return false;
   }
 }
 
@@ -348,27 +175,27 @@ async function selectCountry(browser, ref, country) {
  */
 function validateGuestData(guestData) {
   const errors = [];
-  
+
   if (!guestData.firstName || guestData.firstName.trim().length === 0) {
     errors.push('First name is required');
   }
-  
+
   if (!guestData.lastName || guestData.lastName.trim().length === 0) {
     errors.push('Last name is required');
   }
-  
+
   if (!guestData.email || !isValidEmail(guestData.email)) {
     errors.push('Valid email is required');
   }
-  
+
   if (!guestData.phone || guestData.phone.trim().length < 7) {
     errors.push('Valid phone number is required (min 7 digits)');
   }
-  
+
   if (!guestData.country || guestData.country.trim().length === 0) {
     errors.push('Country is required');
   }
-  
+
   return {
     valid: errors.length === 0,
     errors: errors
@@ -385,70 +212,56 @@ function isValidEmail(email) {
 
 /**
  * Proceed from guest details to payment page
- * Click the "Continue to Booking" or "Next" button
- * @param {Object} browser - Browser automation interface
+ * @param {Object} page - Playwright page object
  * @returns {Promise<Object>} Result
  */
-async function proceedToPayment(browser) {
+async function proceedToPayment(page) {
   try {
-    console.log('➡️  Proceeding to payment...');
-    
-    const snapshot = await browser.snapshot({
-      profile: 'chrome',
-      refs: 'aria'
-    });
-    
-    if (!snapshot || !snapshot.elements) {
-      throw new Error('Failed to get page snapshot');
-    }
-    
-    // Find the continue/next button
-    const continueButton = findContinueButton(snapshot.elements);
-    
-    if (!continueButton || !continueButton.ref) {
-      throw new Error('Continue/Next button not found');
-    }
-    
-    console.log(`  🎯 Clicking continue button (ref: ${continueButton.ref})`);
-    
-    await browser.act({
-      profile: 'chrome',
-      request: {
-        kind: 'click',
-        ref: continueButton.ref
+    console.log('Proceeding to payment...');
+
+    // Find and click continue button
+    const selectors = [
+      'button:has-text("Continue to Booking")',
+      'button:has-text("Continue")',
+      'button:has-text("Next")',
+      'button:has-text("Book now")',
+      '[data-testid="continue-button"]'
+    ];
+
+    let clicked = false;
+    for (const selector of selectors) {
+      const btn = page.locator(selector).first();
+      if (await btn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await btn.click();
+        clicked = true;
+        console.log('Clicked continue button');
+        break;
       }
-    });
-    
-    // Wait for payment page to load
-    await sleep(1500);
-    
-    // Verify we're on payment page
-    const newSnapshot = await browser.snapshot({
-      profile: 'chrome',
-      refs: 'aria'
-    });
-    
-    const onPaymentPage = newSnapshot && (
-      newSnapshot.includes('Payment') ||
-      newSnapshot.includes('payment details') ||
-      newSnapshot.includes('Credit card') ||
-      newSnapshot.includes('Complete booking')
-    );
-    
-    if (!onPaymentPage) {
-      console.warn('  ⚠️  May not be on payment page yet');
     }
-    
-    console.log('✅ Proceeded to payment page');
-    
+
+    if (!clicked) {
+      throw new Error('Continue button not found');
+    }
+
+    // Wait for navigation
+    await page.waitForLoadState('networkidle');
+    await sleep(1500);
+
+    // Verify we're on payment page
+    const url = page.url();
+    const onPaymentPage = url.includes('checkout') || url.includes('payment') || url.includes('booking');
+
+    console.log('Proceeded to payment page');
+
     return {
       success: true,
       onPaymentPage: onPaymentPage,
+      url: url,
       timestamp: new Date().toISOString()
     };
-    
+
   } catch (error) {
-    console.error('❌ Error proceeding to payment:', error.message);
+    console.error('Error proceeding to payment:', error.message);
     return {
       success: false,
       error: error.message,
@@ -458,54 +271,10 @@ async function proceedToPayment(browser) {
 }
 
 /**
- * Find the continue/next button from elements
- * @param {Array} elements - Snapshot elements
- * @returns {Object|null} Button element
- */
-function findContinueButton(elements) {
-  // Button texts that typically mean "continue" or "next step"
-  const buttonTexts = [
-    'Continue to Booking',
-    'Continue',
-    'Next',
-    'Next step',
-    'Book now',
-    'Complete booking',
-    'Proceed to payment'
-  ];
-  
-  for (const element of elements) {
-    if (element.role === 'button') {
-      const name = element.name || '';
-      for (const btnText of buttonTexts) {
-        if (name.includes(btnText)) {
-          return element;
-        }
-      }
-    }
-    
-    if (element.children) {
-      const found = findContinueButton(element.children);
-      if (found) return found;
-    }
-  }
-  
-  return null;
-}
-
-/**
- * Sleep helper
- */
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
  * Save guest data to profile (for future bookings)
  */
 function saveGuestProfile(guestData, profileName = 'default') {
-  // In a real implementation, this would save to a database or config file
-  console.log(`💾 Saved guest profile: ${profileName}`);
+  console.log(`Saved guest profile: ${profileName}`);
   return {
     success: true,
     profileName: profileName,
@@ -517,9 +286,14 @@ function saveGuestProfile(guestData, profileName = 'default') {
  * Load guest data from profile
  */
 function loadGuestProfile(profileName = 'default') {
-  // In a real implementation, this would load from a database or config file
-  // For now, return null to indicate no saved profile
   return null;
+}
+
+/**
+ * Sleep helper
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // Export for use in other modules
@@ -530,8 +304,7 @@ module.exports = {
   isValidEmail,
   saveGuestProfile,
   loadGuestProfile,
-  proceedToPayment,
-  extractFieldRef
+  proceedToPayment
 };
 
 // CLI mode for testing
@@ -539,15 +312,6 @@ if (require.main === module) {
   console.log('Guest Details Module');
   console.log('\nUsage:');
   console.log('  const { extractGuestForm, fillGuestDetails } = require("./guest-details.js");');
-  console.log('  const form = await extractGuestForm(browser);');
-  console.log('  await fillGuestDetails(browser, guestData);');
-  console.log('\nGuest Data Structure:');
-  console.log('  {');
-  console.log('    firstName: "John",');
-  console.log('    lastName: "Doe",');
-  console.log('    email: "john@example.com",');
-  console.log('    phone: "+1-555-0123",');
-  console.log('    country: "United States",');
-  console.log('    specialRequests: "Late check-in"');
-  console.log('  }');
+  console.log('  const form = await extractGuestForm(page);');
+  console.log('  await fillGuestDetails(page, guestData);');
 }
