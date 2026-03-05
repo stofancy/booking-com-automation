@@ -3,59 +3,60 @@
 /**
  * Property Selector for booking.com
  * Handles selecting a property from search results and navigating to details page
- * Uses ARIA ref-based approach for reliable element interaction
- * 
+ * Uses Playwright for browser automation
+ *
  * Usage:
- *   const { selectProperty, navigateToPropertyDetails } = require('./property-selector.js');
- *   const property = await selectProperty(browser, results, 1);
+ *   const { selectProperty } = require('./property-selector.js');
+ *   const property = await selectProperty(page, results, 1);
  */
 
 /**
  * Select a property from search results and navigate to details page
- * @param {Object} browser - Browser automation interface
+ * @param {Object} page - Playwright page object
  * @param {Array} results - Array of hotel results from search
  * @param {number} index - Index of property to select (1-based)
  * @returns {Promise<Object>} Property details object
  */
-async function selectProperty(browser, results, index = 1) {
+async function selectProperty(page, results, index = 1) {
   try {
-    console.log(`🏨 Selecting property #${index}...`);
-    
+    console.log(`Selecting property #${index}...`);
+
     // Validate results
     if (!results || results.length === 0) {
       throw new Error('No results available to select from');
     }
-    
+
     if (index < 1 || index > results.length) {
       throw new Error(`Invalid index ${index}. Must be between 1 and ${results.length}`);
     }
-    
+
     const selectedHotel = results[index - 1];
-    
-    // Click on property using ARIA ref approach
-    console.log(`  📍 Clicking on: ${selectedHotel.name || `Property ${index}`}`);
-    await clickOnProperty(browser, index);
-    
+
+    // Click on property
+    console.log(`  Clicking on: ${selectedHotel.name || `Property ${index}`}`);
+    await clickOnProperty(page, selectedHotel);
+
     // Wait for details page to load
-    console.log('  ⏳ Waiting for property details page...');
-    const loaded = await waitForPropertyDetailsPage(browser);
-    
+    console.log('  Waiting for property details page...');
+    const loaded = await waitForPropertyDetailsPage(page);
+
     if (!loaded) {
       throw new Error('Failed to load property details page');
     }
-    
-    console.log('✅ Property details page loaded');
-    
+
+    console.log('Property details page loaded');
+
     // Return property info
     return {
       success: true,
       index: index,
       name: selectedHotel.name || `Property ${index}`,
+      url: page.url(),
       timestamp: new Date().toISOString()
     };
-    
+
   } catch (error) {
-    console.error('❌ Error selecting property:', error.message);
+    console.error('Error selecting property:', error.message);
     return {
       success: false,
       error: error.message,
@@ -66,191 +67,101 @@ async function selectProperty(browser, results, index = 1) {
 }
 
 /**
- * Click on a property from search results using ARIA refs
- * Follows the pattern from results-extractor.js:
- * - Find listitem "Property" elements
- * - Get the link inside each property card
- * - Click using ARIA ref
+ * Click on a property from search results
+ * @param {Object} page - Playwright page object
+ * @param {Object} hotel - Hotel object with url or name
  */
-async function clickOnProperty(browser, index) {
+async function clickOnProperty(page, hotel) {
   try {
-    // Get snapshot with ARIA refs
-    const snapshot = await browser.snapshot({
-      profile: 'chrome',
-      refs: 'aria'
-    });
-    
-    if (!snapshot || !snapshot.elements) {
-      throw new Error('Failed to get page snapshot');
+    // If we have a URL, navigate directly
+    if (hotel.url) {
+      await page.goto(hotel.url, { waitUntil: 'networkidle' });
+      await sleep(1000);
+      console.log('  Navigated to property via URL');
+      return;
     }
-    
-    console.log('  🔍 Finding property card using ARIA...');
-    
-    // Find all property listitems
-    const propertyCards = findPropertyCards(snapshot.elements);
-    
-    if (propertyCards.length === 0) {
-      throw new Error('No property cards found on page');
-    }
-    
-    if (index > propertyCards.length) {
-      throw new Error(`Property index ${index} not found (only ${propertyCards.length} properties)`);
-    }
-    
-    // Get the target property card (0-indexed)
-    const targetCard = propertyCards[index - 1];
-    
-    if (!targetCard || !targetCard.ref) {
-      throw new Error(`Property card ${index} does not have a clickable ref`);
-    }
-    
-    console.log(`  🎯 Clicking property ${index} (ref: ${targetCard.ref})`);
-    
-    // Click using ARIA ref
-    await browser.act({
-      profile: 'chrome',
-      request: {
-        kind: 'click',
-        ref: targetCard.ref
+
+    // Otherwise, find and click the link by name
+    if (hotel.name) {
+      // Try to find a link containing the hotel name
+      const linkSelector = `a:has-text("${hotel.name.substring(0, 30)}")`;
+      const link = page.locator(linkSelector).first();
+
+      if (await link.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await link.click();
+        await sleep(1000);
+        console.log('  Clicked property by name');
+        return;
       }
-    });
-    
-    // Wait for navigation
+    }
+
+    // Fallback: click on first hotel link
+    const firstHotelLink = page.locator('a[href*="/hotel/"]').first();
+    await firstHotelLink.click();
     await sleep(1000);
-    
-    console.log('  ✅ Property clicked');
-    
+    console.log('  Clicked first hotel link');
+
   } catch (error) {
     throw new Error(`Failed to click property: ${error.message}`);
   }
 }
 
 /**
- * Find all property cards from snapshot elements
- * Property cards are typically listitem elements with role "Property" or containing property info
- * @param {Array} elements - Snapshot elements array
- * @returns {Array} Array of property card objects with ref
- */
-function findPropertyCards(elements) {
-  const cards = [];
-  
-  // First, try to find listitem with role containing "Property"
-  for (const element of elements) {
-    if (element.role === 'listitem' && element.name && element.name.includes('Property')) {
-      // Find the link inside this listitem
-      const link = findLinkInElement(element);
-      if (link) {
-        cards.push({
-          name: element.name,
-          ref: link.ref,
-          url: link.url
-        });
-      }
-    }
-    
-    // Also check for generic containers that might contain property info
-    if (element.role === 'group' || element.role === 'article') {
-      const groupCards = findPropertyCards(element.children || []);
-      cards.push(...groupCards);
-    }
-    
-    // Recurse into children
-    if (element.children) {
-      const childCards = findPropertyCards(element.children);
-      cards.push(...childCards);
-    }
-  }
-  
-  return cards;
-}
-
-/**
- * Find a link element within an element tree
- * @param {Object} element - Parent element to search within
- * @returns {Object|null} Link element with ref or null
- */
-function findLinkInElement(element) {
-  if (!element) return null;
-  
-  // Direct link
-  if (element.role === 'link' && element.ref) {
-    return element;
-  }
-  
-  // Check children
-  if (element.children) {
-    for (const child of element.children) {
-      const found = findLinkInElement(child);
-      if (found) return found;
-    }
-  }
-  
-  return null;
-}
-
-/**
  * Wait for property details page to load
+ * @param {Object} page - Playwright page object
  */
-async function waitForPropertyDetailsPage(browser, timeout = 15000) {
+async function waitForPropertyDetailsPage(page, timeout = 15000) {
   const start = Date.now();
-  
+
   while (Date.now() - start < timeout) {
     try {
-      const snapshot = await browser.snapshot({
-        profile: 'chrome',
-        refs: 'aria'
-      });
-      
-      // Check for property details page indicators
-      if (snapshot && (
-        snapshot.includes('property details') ||
-        snapshot.includes('hotel details') ||
-        snapshot.includes('rooms') ||
-        snapshot.includes('amenities')
-      )) {
+      const url = page.url();
+
+      // Check for property details URL pattern
+      if (url.includes('/hotel/') && !url.includes('searchresults')) {
+        // Wait for main content to load
+        await page.waitForLoadState('domcontentloaded');
         return true;
       }
     } catch (error) {
       // Page not ready yet
     }
-    
-    await sleep(1000);
+
+    await sleep(500);
   }
-  
+
   return false;
 }
 
 /**
  * Handle property page popups (cookies, login, etc.)
+ * @param {Object} page - Playwright page object
  */
-async function handlePropertyPagePopups(browser) {
+async function handlePropertyPagePopups(page) {
   try {
     // Handle cookie banner
-    await handleCookieBanner(browser);
-    
+    await handleCookieBanner(page);
+
     // Handle login popup if appears
-    await handleLoginPopup(browser);
-    
-    console.log('  ✅ Popups handled');
+    await handleLoginPopup(page);
+
+    console.log('  Popups handled');
   } catch (error) {
-    console.warn('  ⚠️  Some popups may not have been handled');
+    console.warn('  Some popups may not have been handled');
   }
 }
 
 /**
  * Handle cookie banner on property page
+ * @param {Object} page - Playwright page object
  */
-async function handleCookieBanner(browser) {
+async function handleCookieBanner(page) {
   try {
-    await browser.act({
-      profile: 'chrome',
-      request: {
-        kind: 'click',
-        selector: '[data-testid="cookie-accept-btn"]',
-        timeout: 2000
-      }
-    });
-    console.log('  🍪 Cookie banner accepted');
+    const acceptBtn = page.locator('[data-testid="cookie-accept-btn"]');
+    if (await acceptBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await acceptBtn.click();
+      console.log('  Cookie banner accepted');
+    }
   } catch (error) {
     // Cookie banner not present
   }
@@ -258,19 +169,16 @@ async function handleCookieBanner(browser) {
 
 /**
  * Handle login popup if it appears
+ * @param {Object} page - Playwright page object
  */
-async function handleLoginPopup(browser) {
+async function handleLoginPopup(page) {
   try {
     // Close login popup if it appears
-    await browser.act({
-      profile: 'chrome',
-      request: {
-        kind: 'click',
-        selector: '[data-testid="login-popup-close"]',
-        timeout: 1000
-      }
-    });
-    console.log('  🔒 Login popup closed');
+    const closeBtn = page.locator('[data-testid="login-popup-close"], [aria-label="Close"]').first();
+    if (await closeBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await closeBtn.click();
+      console.log('  Login popup closed');
+    }
   } catch (error) {
     // Login popup not present
   }
@@ -278,33 +186,32 @@ async function handleLoginPopup(browser) {
 
 /**
  * Navigate directly to property details page by URL
+ * @param {Object} page - Playwright page object
+ * @param {string} propertyUrl - Property URL
  */
-async function navigateToPropertyDetails(browser, propertyUrl) {
+async function navigateToPropertyDetails(page, propertyUrl) {
   try {
-    console.log('🔗 Navigating to property details...');
-    
-    await browser.navigate({
-      profile: 'chrome',
-      targetUrl: propertyUrl
-    });
-    
+    console.log('Navigating to property details...');
+
+    await page.goto(propertyUrl, { waitUntil: 'networkidle' });
+
     // Wait for page to load
-    const loaded = await waitForPropertyDetailsPage(browser);
-    
+    const loaded = await waitForPropertyDetailsPage(page);
+
     if (!loaded) {
       throw new Error('Property details page did not load');
     }
-    
-    console.log('✅ Property details page loaded');
-    
+
+    console.log('Property details page loaded');
+
     return {
       success: true,
       url: propertyUrl,
       timestamp: new Date().toISOString()
     };
-    
+
   } catch (error) {
-    console.error('❌ Error navigating to property:', error.message);
+    console.error('Error navigating to property:', error.message);
     return {
       success: false,
       error: error.message,
@@ -316,28 +223,25 @@ async function navigateToPropertyDetails(browser, propertyUrl) {
 
 /**
  * Go back to search results from property details
+ * @param {Object} page - Playwright page object
  */
-async function goBackToSearchResults(browser) {
+async function goBackToSearchResults(page) {
   try {
-    console.log('↩️  Going back to search results...');
-    
-    await browser.navigate({
-      profile: 'chrome',
-      targetUrl: 'javascript:history.back()'
-    });
-    
-    // Wait for results page
-    await sleep(2000);
-    
-    console.log('✅ Back to search results');
-    
+    console.log('Going back to search results...');
+
+    await page.goBack();
+    await page.waitForLoadState('networkidle');
+    await sleep(1000);
+
+    console.log('Back to search results');
+
     return {
       success: true,
       timestamp: new Date().toISOString()
     };
-    
+
   } catch (error) {
-    console.error('❌ Error going back:', error.message);
+    console.error('Error going back:', error.message);
     return {
       success: false,
       error: error.message,
@@ -348,21 +252,15 @@ async function goBackToSearchResults(browser) {
 
 /**
  * Check if currently on property details page
+ * @param {Object} page - Playwright page object
  */
-function isOnPropertyDetailsPage(snapshot) {
-  if (!snapshot) {
+async function isOnPropertyDetailsPage(page) {
+  try {
+    const url = page.url();
+    return url.includes('/hotel/') && !url.includes('searchresults');
+  } catch (error) {
     return false;
   }
-  
-  // Check for property details page indicators (case-insensitive)
-  const lowerSnapshot = snapshot.toLowerCase();
-  return (
-    lowerSnapshot.includes('property details') ||
-    lowerSnapshot.includes('hotel details') ||
-    lowerSnapshot.includes('rooms') ||
-    lowerSnapshot.includes('amenities') ||
-    lowerSnapshot.includes('reviews')
-  );
 }
 
 /**
@@ -389,8 +287,8 @@ module.exports = {
 // CLI mode for testing
 if (require.main === module) {
   console.log('Property Selector Module');
-  console.log('This module requires browser automation to be configured.');
+  console.log('This module requires Playwright to be configured.');
   console.log('\nUsage:');
   console.log('  const { selectProperty } = require("./property-selector.js");');
-  console.log('  const result = await selectProperty(browser, results, 1);');
+  console.log('  const result = await selectProperty(page, results, 1);');
 }
