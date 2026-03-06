@@ -11,7 +11,9 @@
     "test:watch": "node --test --watch tests/unit/*.test.js",
     "release": "node scripts/release.js",
     "validate": "node scripts/validate-skill.js",
-    "package": "node scripts/package-skill.js"
+    "package": "node scripts/package-skill.js",
+    "deploy": "node scripts/deploy-skill.js",
+    "deploy:package": "npm run package && npm run deploy"
   },
   "keywords": [
     "openclaw",

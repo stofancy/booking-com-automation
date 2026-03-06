@@ -3,7 +3,7 @@
 /**
  * Skill Packaging Script
  * Packages the booking-com-automation skill into a .skill file
- * 
+ *
  * Note: Requires 'archiver' package: npm install archiver
  */
 
@@ -20,9 +20,9 @@ console.log('📦 Packaging booking-com-automation skill...\n');
 // First validate
 console.log('Step 1: Validating skill...');
 try {
-  execSync('node scripts/validate-skill.js', { 
-    cwd: SKILL_ROOT, 
-    stdio: 'inherit' 
+  execSync('node scripts/validate-skill.js', {
+    cwd: SKILL_ROOT,
+    stdio: 'inherit'
   });
   console.log('  ✓ Validation passed\n');
 } catch (e) {
@@ -61,10 +61,10 @@ if (!hasArchiver) {
       'SKILL.md package.json scripts/ references/ tests/ .github/workflows/ ' +
       '-x "*.git*" -x "node_modules*" -x ".state*" -x "dist*" -x "*.log" -x ".DS_Store"';
     execSync(zipCmd, { stdio: 'inherit' });
-    
+
     const stats = fs.statSync(outputPath);
     const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
-    
+
     console.log('\n✅ Package created successfully!');
     console.log('   File: ' + outputPath);
     console.log('   Size: ' + sizeMB + ' MB');
@@ -81,21 +81,21 @@ if (!hasArchiver) {
   const archiver = require('archiver');
   const output = fs.createWriteStream(outputPath);
   const archive = archiver('zip', { zlib: { level: 9 } });
-  
+
   output.on('close', () => {
     const sizeMB = (archive.pointer() / 1024 / 1024).toFixed(2);
     console.log('\n✅ Package created successfully!');
     console.log('   File: ' + outputPath);
     console.log('   Size: ' + sizeMB + ' MB');
   });
-  
+
   archive.on('error', (err) => {
     console.error('❌ Error creating package:', err);
     process.exit(1);
   });
-  
+
   archive.pipe(output);
-  
+
   // Include only necessary files for the skill package
   const includeFiles = [
     'SKILL.md',
@@ -104,12 +104,13 @@ if (!hasArchiver) {
     'plugin.json',
     'package.json'
   ];
-  
+
   const includeDirs = [
     'scripts',
-    'references'
+    'references',
+    'tests'
   ];
-  
+
   // Add specific files
   includeFiles.forEach(file => {
     const filePath = path.join(SKILL_ROOT, file);
@@ -117,7 +118,7 @@ if (!hasArchiver) {
       archive.file(filePath, { name: file });
     }
   });
-  
+
   // Add directories
   includeDirs.forEach(dir => {
     const dirPath = path.join(SKILL_ROOT, dir);
@@ -128,15 +129,17 @@ if (!hasArchiver) {
         '.DS_Store',
         'coverage'
       ];
-      archive.directory(dirPath, dir, { ignore: ignorePatterns });
+      // For tests, don't ignore test files
+      const patterns = dir === 'tests' ? ['*.log', '.DS_Store', 'coverage'] : ignorePatterns;
+      archive.directory(dirPath, dir, { ignore: patterns });
     }
   });
-  
+
   // Include node_modules for runtime dependencies
   const nodeModulesPath = path.join(SKILL_ROOT, 'node_modules');
   if (fs.existsSync(nodeModulesPath)) {
     archive.directory(nodeModulesPath, 'node_modules');
   }
-  
+
   archive.finalize();
 }
