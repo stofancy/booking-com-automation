@@ -23,7 +23,6 @@
  */
 
 const { spawn } = require('child_process');
-const assert = require('assert');
 
 // Test configuration
 const DEFAULT_AGENT = process.env.OPENCLAW_AGENT_ID || 'travel-agency';
@@ -109,38 +108,92 @@ function runAgent(agentId, message, timeout = 180) {
 
 /**
  * Verify skill is being used by checking output
+ * Returns object with found indicators for detailed reporting
  */
 function verifySkillUsage(output) {
+  const lowerOutput = output.toLowerCase();
+
   // Check for skill-related messages
   const indicators = [
-    'booking-com-automation',
-    'booking.com',
-    'Search completed',
-    'search results',
-    'hotels in'
+    { key: 'skill_name', pattern: 'booking-com-automation', description: 'Skill name mentioned' },
+    { key: 'booking_dotcom', pattern: 'booking.com', description: 'booking.com referenced' },
+    { key: 'search_completed', pattern: 'search completed', description: 'Search completed message' },
+    { key: 'search_results', pattern: 'search results', description: 'Search results mentioned' },
+    { key: 'hotels_in', pattern: 'hotels in', description: 'Hotels search phrase' },
+    { key: 'destination', pattern: 'destination:', description: 'Destination shown' }
   ];
 
-  const found = indicators.some(indicator =>
-    output.toLowerCase().includes(indicator.toLowerCase())
-  );
+  const found = [];
+  const missing = [];
 
-  return found;
+  for (const indicator of indicators) {
+    if (lowerOutput.includes(indicator.pattern)) {
+      found.push(indicator.description);
+    } else {
+      missing.push(indicator.description);
+    }
+  }
+
+  const success = found.length >= 2; // At least 2 indicators must match
+
+  return {
+    success,
+    found,
+    missing,
+    matchedCount: found.length,
+    totalCount: indicators.length
+  };
 }
 
 /**
  * Verify search was successful
+ * Returns object with found indicators for detailed reporting
  */
 function verifySearchSuccess(output) {
-  const successIndicators = [
-    'completed',
-    'success',
-    'results',
-    'url:'
+  const lowerOutput = output.toLowerCase();
+
+  const indicators = [
+    { key: 'completed', pattern: 'completed', description: 'Completion status' },
+    { key: 'results_url', pattern: 'url:', description: 'Results URL present' },
+    { key: 'dates', pattern: '2026-', description: 'Dates displayed' },
+    { key: 'guests', pattern: 'guest', description: 'Guests count shown' }
   ];
 
-  return successIndicators.some(indicator =>
-    output.toLowerCase().includes(indicator.toLowerCase())
-  );
+  const found = [];
+  const missing = [];
+
+  for (const indicator of indicators) {
+    if (lowerOutput.includes(indicator.pattern)) {
+      found.push(indicator.description);
+    } else {
+      missing.push(indicator.description);
+    }
+  }
+
+  const success = found.length >= 2;
+
+  return {
+    success,
+    found,
+    missing,
+    matchedCount: found.length,
+    totalCount: indicators.length
+  };
+}
+
+/**
+ * Print verification details
+ */
+function printVerificationDetails(verification, label) {
+  console.log(`\n[${label}] Details:`);
+  if (verification.found.length > 0) {
+    console.log(`  ✓ Found (${verification.matchedCount}/${verification.totalCount}):`);
+    verification.found.forEach(item => console.log(`    - ${item}`));
+  }
+  if (verification.missing.length > 0 && !verification.success) {
+    console.log(`  ✗ Missing:`);
+    verification.missing.forEach(item => console.log(`    - ${item}`));
+  }
 }
 
 // Test cases
@@ -178,18 +231,22 @@ async function runTest(testCase) {
   const result = await runAgent(DEFAULT_AGENT, message, DEFAULT_TIMEOUT);
 
   // Verify skill was used
-  const skillUsed = verifySkillUsage(result.stdout);
-  console.log(`\n[VERIFY] Skill used: ${skillUsed ? '✓' : '✗'}`);
+  const skillVerification = verifySkillUsage(result.stdout);
+  console.log(`\n[VERIFY] Skill used: ${skillVerification.success ? '✓' : '✗'}`);
+  printVerificationDetails(skillVerification, 'SKILL USAGE');
 
   // Verify search succeeded
-  const searchSuccess = verifySearchSuccess(result.stdout);
-  console.log(`[VERIFY] Search success: ${searchSuccess ? '✓' : '✗'}`);
+  const searchVerification = verifySearchSuccess(result.stdout);
+  console.log(`[VERIFY] Search success: ${searchVerification.success ? '✓' : '✗'}`);
+  printVerificationDetails(searchVerification, 'SEARCH SUCCESS');
 
   return {
     name: testCase.name,
-    skillUsed,
-    searchSuccess,
-    exitCode: result.code
+    skillUsed: skillVerification.success,
+    searchSuccess: searchVerification.success,
+    exitCode: result.code,
+    skillDetails: skillVerification,
+    searchDetails: searchVerification
   };
 }
 
