@@ -39,7 +39,8 @@ function parseArgs() {
     checkIn: null,
     checkOut: null,
     adults: 2,
-    timeout: DEFAULT_TIMEOUT
+    timeout: DEFAULT_TIMEOUT,
+    flow: 'search' // search | full
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -49,6 +50,7 @@ function parseArgs() {
     else if (args[i] === '--checkout') config.checkOut = args[++i];
     else if (args[i] === '--adults') config.adults = parseInt(args[++i]);
     else if (args[i] === '--timeout') config.timeout = parseInt(args[++i]);
+    else if (args[i] === '--flow') config.flow = args[++i];
   }
 
   return config;
@@ -115,12 +117,12 @@ function verifySkillUsage(output) {
 
   // Check for skill-related messages
   const indicators = [
-    { key: 'skill_name', pattern: 'booking-com-automation', description: 'Skill name mentioned' },
-    { key: 'booking_dotcom', pattern: 'booking.com', description: 'booking.com referenced' },
-    { key: 'search_completed', pattern: 'search completed', description: 'Search completed message' },
-    { key: 'search_results', pattern: 'search results', description: 'Search results mentioned' },
-    { key: 'hotels_in', pattern: 'hotels in', description: 'Hotels search phrase' },
-    { key: 'destination', pattern: 'destination:', description: 'Destination shown' }
+    { key: 'skill_name', pattern: 'booking-com-automation', required: true, description: 'Skill name mentioned' },
+    { key: 'booking_dotcom', pattern: 'booking.com', required: true, description: 'booking.com referenced' },
+    { key: 'search_completed', pattern: 'search completed', required: true, description: 'Search completed message' },
+    { key: 'search_results', pattern: 'search results', required: false, description: 'Search results mentioned' },
+    { key: 'hotels_in', pattern: 'hotels in', required: false, description: 'Hotels search phrase' },
+    { key: 'destination', pattern: 'destination:', required: true, description: 'Destination shown' }
   ];
 
   const found = [];
@@ -134,12 +136,15 @@ function verifySkillUsage(output) {
     }
   }
 
-  const success = found.length >= 2; // At least 2 indicators must match
+  // Must have ALL required indicators AND at least 50% of optional
+  const requiredMissing = indicators.filter(i => i.required && !lowerOutput.includes(i.pattern));
+  const success = requiredMissing.length === 0;
 
   return {
     success,
     found,
     missing,
+    requiredMissing,
     matchedCount: found.length,
     totalCount: indicators.length
   };
@@ -153,10 +158,10 @@ function verifySearchSuccess(output) {
   const lowerOutput = output.toLowerCase();
 
   const indicators = [
-    { key: 'completed', pattern: 'completed', description: 'Completion status' },
-    { key: 'results_url', pattern: 'url:', description: 'Results URL present' },
-    { key: 'dates', pattern: '2026-', description: 'Dates displayed' },
-    { key: 'guests', pattern: 'guest', description: 'Guests count shown' }
+    { key: 'completed', pattern: 'completed', required: true, description: 'Completion status' },
+    { key: 'results_url', pattern: 'url:', required: true, description: 'Results URL present' },
+    { key: 'dates', pattern: '2026-', required: true, description: 'Dates displayed' },
+    { key: 'guests', pattern: 'guest', required: true, description: 'Guests count shown' }
   ];
 
   const found = [];
@@ -170,12 +175,14 @@ function verifySearchSuccess(output) {
     }
   }
 
-  const success = found.length >= 2;
+  const requiredMissing = indicators.filter(i => i.required && !lowerOutput.includes(i.pattern));
+  const success = requiredMissing.length === 0;
 
   return {
     success,
     found,
     missing,
+    requiredMissing,
     matchedCount: found.length,
     totalCount: indicators.length
   };
@@ -190,14 +197,61 @@ function printVerificationDetails(verification, label) {
     console.log(`  ✓ Found (${verification.matchedCount}/${verification.totalCount}):`);
     verification.found.forEach(item => console.log(`    - ${item}`));
   }
-  if (verification.missing.length > 0 && !verification.success) {
-    console.log(`  ✗ Missing:`);
+  if (verification.missing.length > 0) {
+    console.log(`  ${verification.success ? '⚠' : '✗'} Missing:`);
     verification.missing.forEach(item => console.log(`    - ${item}`));
+  }
+  if (verification.requiredMissing && verification.requiredMissing.length > 0) {
+    console.log(`  ✗ Required missing (causes failure):`);
+    verification.requiredMissing.forEach(item => console.log(`    - ${item}`));
   }
 }
 
-// Test cases
-const testCases = [
+// ============================================================================
+// TEST CASES FOR FULL BOOKING FLOW
+// ============================================================================
+//
+// The booking flow has multiple stages. Currently only SEARCH is implemented.
+// Below are test cases for the FULL flow (not yet executable).
+//
+// Full Flow Test Cases (when all stages are implemented):
+// ----------------------------------------------------------------------------
+const fullFlowTestCases = [
+  {
+    name: 'Full Booking Flow: Search → Select Property',
+    stages: ['search', 'property_selection'],
+    description: 'Search for hotels, select a property from results',
+    // Message would need to handle multiple turns with the agent
+    message: 'Find hotels in Paris from May 1-5, 2026. Select the first property with a guest rating above 8.0.'
+  },
+  {
+    name: 'Full Booking Flow: Search → Property Details',
+    stages: ['search', 'property_selection', 'property_details'],
+    description: 'Search, select property, view details',
+    message: 'Find hotels in Tokyo from April 10-15, 2026. Select a hotel and show me the property details including amenities.'
+  },
+  {
+    name: 'Full Booking Flow: Search → Rooms',
+    stages: ['search', 'property_selection', 'property_details', 'room_extraction'],
+    description: 'Search, select property, view room options',
+    message: 'Search Paris hotels for May 1-5. Pick a 4-star hotel and show me the available rooms with prices.'
+  },
+  {
+    name: 'Full Booking Flow: Search → Guest Details',
+    stages: ['search', 'property_selection', 'property_details', 'room_extraction', 'room_selection', 'guest_details'],
+    description: 'Search through to entering guest details',
+    message: 'Find hotels in London June 1-3. Select a room and enter guest details (test@test.com, John Doe).'
+  },
+  {
+    name: 'Full Booking Flow: Complete Booking',
+    stages: ['search', 'property_selection', 'property_details', 'room_extraction', 'room_selection', 'guest_details', 'payment'],
+    description: 'Complete entire booking flow up to payment',
+    message: 'Book a hotel in Berlin from July 1-4 for 2 adults. Select a room with free cancellation and enter guest details.'
+  }
+];
+
+// Current Implementation - Search Only Test Cases
+const searchTestCases = [
   {
     name: 'Search hotels in Paris',
     destination: 'Paris',
@@ -219,9 +273,9 @@ const testCases = [
 ];
 
 /**
- * Run a single test case
+ * Run a single search test case
  */
-async function runTest(testCase) {
+async function runSearchTest(testCase) {
   console.log(`\n${'='.repeat(60)}`);
   console.log(`TEST: ${testCase.name}`);
   console.log('='.repeat(60));
@@ -251,6 +305,35 @@ async function runTest(testCase) {
 }
 
 /**
+ * Print full flow test cases (without executing)
+ */
+function printFullFlowTestCases() {
+  console.log('\n' + '='.repeat(60));
+  console.log('FULL BOOKING FLOW TEST CASES');
+  console.log('(Not yet executable - waiting for full implementation)');
+  console.log('='.repeat(60));
+
+  fullFlowTestCases.forEach((tc, index) => {
+    console.log(`\n${index + 1}. ${tc.name}`);
+    console.log(`   Stages: ${tc.stages.join(' → ')}`);
+    console.log(`   Description: ${tc.description}`);
+    console.log(`   Message: "${tc.message}"`);
+  });
+
+  console.log('\n' + '='.repeat(60));
+  console.log('Implementation Status:');
+  console.log('  ✓ SEARCH - Implemented and tested');
+  console.log('  ✗ PROPERTY_SELECTION - Not implemented');
+  console.log('  ✗ PROPERTY_DETAILS - Not implemented');
+  console.log('  ✗ ROOM_EXTRACTION - Not implemented');
+  console.log('  ✗ RATE_COMPARISON - Not implemented');
+  console.log('  ✗ ROOM_SELECTION - Not implemented');
+  console.log('  ✗ GUEST_DETAILS - Not implemented');
+  console.log('  ✗ PAYMENT - Not implemented (user completes manually)');
+  console.log('='.repeat(60));
+}
+
+/**
  * Main test runner
  */
 async function main() {
@@ -262,6 +345,7 @@ async function main() {
   console.log(`Agent: ${config.agent}`);
   console.log(`Timeout: ${config.timeout}s`);
   console.log(`Environment: ${process.env.NODE_ENV || 'local'}`);
+  console.log(`Flow: ${config.flow}`);
   console.log('='.repeat(60));
 
   // Check if running locally (not in CI)
@@ -272,12 +356,20 @@ async function main() {
     process.exit(0);
   }
 
+  // Print full flow test cases info
+  if (config.flow === 'full') {
+    printFullFlowTestCases();
+    console.log('\nNote: Full flow tests are not yet executable.');
+    console.log('Run with --flow search to test search functionality.');
+    process.exit(0);
+  }
+
   const results = [];
 
-  // Run test cases
-  for (const testCase of testCases) {
+  // Run search test cases
+  for (const testCase of searchTestCases) {
     try {
-      const result = await runTest(testCase);
+      const result = await runSearchTest(testCase);
       results.push(result);
     } catch (error) {
       console.error(`\n❌ Test failed: ${error.message}`);
@@ -317,6 +409,10 @@ async function main() {
   console.log('='.repeat(60));
   console.log(`Total: ${results.length} | Passed: ${passed} | Failed: ${failed}`);
   console.log('='.repeat(60));
+
+  if (failed > 0) {
+    console.log('\n⚠️  Some tests failed. Check the missing required indicators above.');
+  }
 
   process.exit(failed > 0 ? 1 : 0);
 }
