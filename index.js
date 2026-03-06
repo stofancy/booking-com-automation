@@ -46,7 +46,7 @@ async function run(params) {
     children = 0,
     rooms = 1,
     page: externalPage,
-    headless = true
+    headless = false
   } = params;
 
   // Validate required parameters

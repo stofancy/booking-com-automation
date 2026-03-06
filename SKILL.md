@@ -45,7 +45,7 @@ const result = await run({
   checkIn: '2026-03-15',
   checkOut: '2026-03-20',
   adults: 2,
-  headless: true
+      headless: false
 });
 ```
 
@@ -130,7 +130,7 @@ node index.js --destination Tokyo --headless false
 | adults | number | no | 2 | Guest count |
 | children | number | no | 0 | Child count |
 | rooms | number | no | 1 | Room count |
-| headless | boolean | no | true | Browser mode |
+| headless | boolean | no | false | Browser mode |
 
 ## Returns
 
