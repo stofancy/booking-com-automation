@@ -4,7 +4,7 @@
  * Booking.com Automation Skill - Entry Point
  *
  * A skill for automating hotel booking on booking.com from search to payment.
- * Uses Playwright for browser automation.
+ * Uses OpenClaw browser tool; receives external page for automation.
  *
  * Usage:
  *   const { run } = require('./index.js');
@@ -22,7 +22,7 @@ const { chromium } = require('playwright');
 const searchForm = require('./scripts/search-form.js');
 
 const MODULE_NAME = 'booking-com-automation';
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 
 /**
  * Main run function - OpenClaw skill entry point

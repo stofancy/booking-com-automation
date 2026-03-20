@@ -421,6 +421,12 @@ async function executeSearch(page, searchParams) {
   };
 
   try {
+    // Check login status first
+    const loginStatus = await checkLoginStatus(page);
+    if (!loginStatus.loggedIn) {
+      throw new Error(loginStatus.message);
+    }
+    
     // Fill form
     const formFilled = await fillSearchForm(page, searchParams);
     if (!formFilled) {
@@ -465,6 +471,48 @@ async function runSearch(searchParams, options = {}) {
   }
 }
 
+
+/**
+ * Check if user is logged in to booking.com
+ * @param {Object} page - Playwright page object
+ * @returns {Promise<{loggedIn: boolean, message: string}>} Login status
+ */
+async function checkLoginStatus(page) {
+  try {
+    await page.waitForLoadState('networkidle');
+    
+    // Check for login/sign-in elements that appear when NOT logged in
+    const signInButton = page.locator('a:has-text("Sign in"), button:has-text("Sign in")');
+    
+    // Check for logged-in indicators (user menu, account dropdown)
+    const userMenu = page.locator('[data-testid="header-user-menu"], [aria-label*="profile"]');
+    const accountLink = page.locator('a[href*="/account/"], a[href*="/profile/"]');
+    
+    const isSignInVisible = await signInButton.isVisible().catch(() => false);
+    const isUserMenuVisible = await userMenu.isVisible().catch(() => false);
+    const isAccountLinkVisible = await accountLink.isVisible().catch(() => false);
+    
+    // If sign in button is visible and no account elements, likely not logged in
+    if (isSignInVisible && !isUserMenuVisible && !isAccountLinkVisible) {
+      return {
+        loggedIn: false,
+        message: 'NOT_LOGGED_IN: User is not logged in to booking.com. Please guide the user to log in first by opening booking.com and signing in, then retry the search.'
+      };
+    }
+    
+    return {
+      loggedIn: true,
+      message: 'User is logged in'
+    };
+    
+  } catch (error) {
+    return {
+      loggedIn: false,
+      message: 'Error checking login status: ' + error.message
+    };
+  }
+}
+
 // Export for use in other modules
 module.exports = {
   fillSearchForm,
@@ -473,6 +521,7 @@ module.exports = {
   fillDates,
   fillGuests,
   handleCookieBanner,
+  checkLoginStatus,
   executeSearch,
   runSearch,
   SELECTORS,
