@@ -1,12 +1,12 @@
 ---
 name: booking-com-automation
-description: Automate hotel booking searches on booking.com using Playwright browser automation.
-argument-hint: destination: string, checkIn: string (YYYY-MM-DD), checkOut: string (YYYY-MM-DD), adults?: number, children?: number, rooms?: number, headless?: boolean
+description: Automate hotel booking searches on booking.com. Use OpenClaw's browser tool for automation.
+metadata: {"openclaw": {"requires": {"config": ["browser.enabled"], "bins": ["node"]}, "emoji": "🏨"}}
 ---
 
 # Booking.com Automation Skill
 
-Automate hotel searches on booking.com using Playwright browser automation.
+Automate hotel searches on booking.com using OpenClaw's browser tool.
 
 ## When AI Agent Should Use This Skill
 
@@ -19,6 +19,32 @@ Automate hotel searches on booking.com using Playwright browser automation.
 - User wants flight search (not supported)
 - User wants car rental (not supported)
 - User wants to complete actual payment (manual)
+
+## OpenClaw Integration
+
+This skill uses OpenClaw's built-in `browser` tool. No additional setup required - OpenClaw manages the browser automatically.
+
+### For OpenClaw Users
+
+The skill automatically receives a browser page from OpenClaw. Simply call:
+
+```javascript
+const { run } = require('./index.js');
+
+const result = await run({
+  destination: 'Paris',
+  checkIn: '2026-03-15',
+  checkOut: '2026-03-20',
+  adults: 2
+});
+```
+
+### For CLI Testing
+
+```bash
+# Requires Chrome with remote debugging enabled on port 9222
+node index.js --destination "Paris" --checkin 2026-03-15 --checkout 2026-03-20
+```
 
 ## How AI Agent Should Use This Skill
 
@@ -44,8 +70,7 @@ const result = await run({
   destination: 'Paris',
   checkIn: '2026-03-15',
   checkOut: '2026-03-20',
-  adults: 2,
-      headless: false
+  adults: 2
 });
 ```
 
@@ -54,7 +79,7 @@ const result = await run({
 ```javascript
 if (result.success) {
   // result.data.url - search results URL to show user
-  // result.data.page - Playwright page for further automation
+  // result.data.page - Browser page for further automation
   console.log('Results:', result.data.url);
 }
 ```
@@ -70,15 +95,15 @@ The booking process has multiple stages. Currently this skill handles **Search**
 └─────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  Future stages (not yet implemented with Playwright):      │
+│  Future stages (not yet implemented):                      │
 │                                                              │
 │  Property Selection → Choose from results                   │
 │         ↓                                                   │
 │  Property Details → View hotel info                         │
 │         ↓                                                   │
-│  Room Extraction → Get room options                        │
+│  Room Extraction → Get room options                         │
 │         ↓                                                   │
-│  Rate Comparison → Compare prices                          │
+│  Rate Comparison → Compare prices                           │
 │         ↓                                                   │
 │  Room Selection → Select room                              │
 │         ↓                                                   │
@@ -93,31 +118,40 @@ For now, this skill focuses on **Search only**. The agent should:
 2. Present the URL to user
 3. User can then browse and book manually
 
-Future updates may add full booking automation.
-
 ## Setup
 
 ### Prerequisites
 
 1. **Node.js** >= 18.0.0
-2. **Playwright** installed (`npm install playwright`)
+2. **OpenClaw** with browser enabled
 3. **booking.com account** with active login (manual)
 
 ### Installation
 
 ```bash
 npm install
-npx playwright install chromium
 ```
 
-### Running
+### Browser Configuration
 
-```bash
-# Headless mode
-node index.js --destination Paris --checkin 2026-03-15 --checkout 2026-03-20
+OpenClaw manages the browser. Configure in `~/.openclaw/openclaw.json`:
 
-# Visible browser
-node index.js --destination Tokyo --headless false
+```json
+{
+  "browser": {
+    "enabled": true,
+    "defaultProfile": "openclaw"
+  }
+}
+```
+
+For existing login sessions, use `profile="user"`:
+```json
+{
+  "browser": {
+    "defaultProfile": "user"
+  }
+}
 ```
 
 ## Parameters
@@ -130,7 +164,6 @@ node index.js --destination Tokyo --headless false
 | adults | number | no | 2 | Guest count |
 | children | number | no | 0 | Child count |
 | rooms | number | no | 1 | Room count |
-| headless | boolean | no | false | Browser mode |
 
 ## Returns
 
@@ -141,7 +174,7 @@ node index.js --destination Tokyo --headless false
   data: {
     searchParams: { destination, checkIn, checkOut, ... },
     url: "https://www.booking.com/searchresults.html?...",
-    page: <Playwright Page object>
+    page: <Browser Page object>
   }
 }
 ```
@@ -150,12 +183,12 @@ node index.js --destination Tokyo --headless false
 
 | Issue | Solution |
 |-------|----------|
-| "Executable doesn't exist" | Run `npx playwright install chromium` |
-| "Timeout" errors | Try `headless: false` to debug |
-| Login required | User logs in manually first |
+| "Browser disabled" | Enable browser in OpenClaw config |
+| "Timeout" errors | Check network connection |
+| Login required | User logs in manually first, or use `profile="user"` |
 
 ---
 
-**Version:** 1.1.0
-**Last Updated:** 2026-03-06
+**Version:** 1.2.0
+**Last Updated:** 2026-03-20
 **Author:** stofancy
