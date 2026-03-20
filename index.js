@@ -34,7 +34,7 @@ const VERSION = '1.1.0';
  * @param {number} params.children - Number of children (default: 0)
  * @param {number} params.rooms - Number of rooms (default: 1)
  * @param {Object} params.page - Playwright page object (optional, for external browser)
- * @param {boolean} params.headless - Run in headless mode (default: true)
+ * @param {boolean} params.headless - Run in headless mode (default: false)
  * @returns {Object} Standardized result object
  */
 async function run(params) {
@@ -140,7 +140,7 @@ function getMetadata() {
       adults: { type: 'number', required: false, default: 2, description: 'Number of adults' },
       children: { type: 'number', required: false, default: 0, description: 'Number of children' },
       rooms: { type: 'number', required: false, default: 1, description: 'Number of rooms' },
-      headless: { type: 'boolean', required: false, default: true, description: 'Run browser headless' }
+      headless: { type: 'boolean', required: false, default: false, description: 'Run browser headless (default: shows browser)' }
     },
     returns: {
       success: 'boolean',
