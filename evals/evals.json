@@ -1,0 +1,23 @@
+{
+  "skill_name": "booking-com-automation",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "帮我预订巴黎4月1日至5日的酒店，2位成人",
+      "expected_output": "Agent 应该使用 browser 工具完成：(1) 导航到 booking.com (2) 获取快照 (3) 找到并填写搜索表单 (4) 设置日期和人数 (5) 提交搜索 (6) 到达搜索结果页",
+      "assertions": []
+    },
+    {
+      "id": 1,
+      "prompt": "Find hotels in Tokyo for April 10-15, 2 adults",
+      "expected_output": "Agent 应该使用 browser 工具完成搜索流程，到达 Tokyo 酒店搜索结果页",
+      "assertions": []
+    },
+    {
+      "id": 2,
+      "prompt": "比较上海酒店价格，4月1日入住3晚，1位成人",
+      "expected_output": "Agent 应该使用 browser 工具搜索上海酒店并展示结果列表",
+      "assertions": []
+    }
+  ]
+}
